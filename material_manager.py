@@ -39,8 +39,7 @@ class MaterialManager:
 
             # 使用 SQL MAX 直接取最大序号
             row = c.execute(
-                "SELECT MAX(CAST(SUBSTR(part_number, LENGTH(?) + 2) AS INTEGER)) 
-                "FROM materials WHERE part_number LIKE ?",
+                "SELECT MAX(CAST(SUBSTR(part_number, LENGTH(?) + 2) AS INTEGER)) FROM materials WHERE part_number LIKE ?",
                 (f"{prefix}-", f"{prefix}-%"),
             ).fetchone()
             max_seq = row[0] if row[0] is not None else 0
