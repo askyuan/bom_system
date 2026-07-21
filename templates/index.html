@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>物料汇算系统</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+:root{--sidebar-w:220px;--header-h:56px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;background:#f5f6fa}
+.sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:#1e293b;color:#94a3b8;display:flex;flex-direction:column;z-index:100}
+.sidebar .brand{padding:16px 20px;font-size:17px;font-weight:700;color:#fff;border-bottom:1px solid #334155;display:flex;align-items:center;gap:10px}
+.sidebar .brand i{font-size:22px;color:#3b82f6}
+.sidebar nav{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none;font-size:14px;transition:all .15s}
+.sidebar nav a:hover,.sidebar nav a.active{background:#334155;color:#fff}
+.sidebar nav a.active{border-right:3px solid #3b82f6}
+.sidebar nav a i{font-size:18px;width:22px;text-align:center}
+.sidebar .nav-group{padding:12px 20px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b}
+.main{margin-left:var(--sidebar-w);min-height:100vh}
+.topbar{height:var(--header-h);background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+.topbar .page-title{font-size:18px;font-weight:600;color:#1e293b}
+.content{padding:24px}
+.stat-card{background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0;transition:box-shadow .2s}
+.stat-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.stat-card .num{font-size:28px;font-weight:700;color:#1e293b}
+.stat-card .label{font-size:13px;color:#64748b;margin-top:2px}
+.stat-card .icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+table.data-table{width:100%;font-size:13px}
+table.data-table th{background:#f8fafc;color:#64748b;font-weight:600;border-bottom:2px solid #e2e8f0;padding:10px 12px;white-space:nowrap}
+table.data-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155}
+table.data-table tr:hover td{background:#f8fafc}
+.badge-active{background:#dcfce7;color:#166534}
+.badge-nrnd{background:#fef3c7;color:#92400e}
+.badge-eol{background:#fee2e2;color:#991b1b}
+.badge-draft{background:#e0e7ff;color:#3730a3}
+.badge-released{background:#dcfce7;color:#166534}
+.badge-obsolete{background:#f1f5f9;color:#64748b}
+.badge-pending{background:#fef3c7;color:#92400e}
+.badge-running{background:#dbeafe;color:#1e40af}
+.badge-completed{background:#dcfce7;color:#166534}
+.badge-failed{background:#fee2e2;color:#991b1b}
+.card{border:1px solid #e2e8f0;border-radius:12px;box-shadow:none}
+.card-header{background:#fff;border-bottom:1px solid #e2e8f0;border-radius:12px 12px 0 0!important;padding:16px 20px}
+.search-box{position:relative}
+.search-box input{padding-left:36px;border-radius:8px;border:1px solid #e2e8f0;height:38px}
+.search-box i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8}
+.btn-primary{background:#3b82f6;border-color:#3b82f6}
+.btn-primary:hover{background:#2563eb;border-color:#2563eb}
+.page-section{display:none}
+.page-section.active{display:block}
+.empty-state{text-align:center;padding:60px 20px;color:#94a3b8}
+.empty-state i{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+.detail-grid{display:grid;grid-template-columns:140px 1fr;gap:6px 16px;font-size:14px}
+.detail-grid dt{color:#64748b;font-weight:500}
+.detail-grid dd{color:#1e293b;margin:0}
+.toast-container{position:fixed;top:70px;right:24px;z-index:9999}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="brand"><i class="bi bi-cpu"></i>物料汇算系统</div>
+  <nav>
+    <div class="nav-group">概览</div>
+    <a href="#" data-page="dashboard" class="active"><i class="bi bi-grid-1x2"></i>仪表盘</a>
+    <div class="nav-group">业务管理</div>
+    <a href="#" data-page="materials"><i class="bi bi-box-seam"></i>物料库</a>
+    <a href="#" data-page="boms"><i class="bi bi-clipboard-data"></i>BOM 管理</a>
+    <a href="#" data-page="calc"><i class="bi bi-calculator"></i>物料汇算</a>
+    <div class="nav-group">系统</div>
+    <a href="#" data-page="categories"><i class="bi bi-tags"></i>分类管理</a>
+    <a href="#" data-page="footprints"><i class="bi bi-box"></i>封装管理</a>
+    <a href="#" data-page="audit"><i class="bi bi-journal-text"></i>操作日志</a>
+  </nav>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <span class="page-title" id="pageTitle">仪表盘</span>
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-sm btn-outline-secondary" onclick="doBackup()" title="备份数据库"><i class="bi bi-download"></i> 备份</button>
+      <span class="text-muted" style="font-size:13px" id="clock"></span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ==================== Dashboard ==================== -->
+    <div class="page-section active" id="page-dashboard">
+      <div class="row g-3 mb-4" id="statsRow"></div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card"><div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">最近汇算任务</span>
+            <a href="#" data-page="calc" class="text-decoration-none small">查看全部</a>
+          </div><div class="card-body p-0"><div id="recentCalc"></div></div></div>
+        </div>
+        <div class="col-md-6">
+          <div class="card"><div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">最近操作日志</span>
+            <a href="#" data-page="audit" class="text-decoration-none small">查看全部</a>
+          </div><div class="card-body p-0"><div id="recentAudit"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Materials ==================== -->
+    <div class="page-section" id="page-materials">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+          <div class="search-box"><i class="bi bi-search"></i>
+            <input type="text" class="form-control" id="matSearch" placeholder="搜索编码/型号/描述..." style="width:240px" oninput="debounce(_matSearchReset,400)()">
+          </div>
+          <select class="form-select form-select-sm" id="matCatFilter" style="width:120px" onchange="_matFilterChange()">
+            <option value="">全部分类</option>
+          </select>
+          <select class="form-select form-select-sm" id="matMfrFilter" style="width:140px" onchange="_matFilterChange()">
+            <option value="">全部制造商</option>
+          </select>
+          <select class="form-select form-select-sm" id="matFpFilter" style="width:130px" onchange="_matFilterChange()">
+            <option value="">全部封装</option>
+          </select>
+          <select class="form-select form-select-sm" id="matStatusFilter" style="width:150px" onchange="_matFilterChange()">
+            <option value="">全部状态</option>
+            <option value="Active">Active (量产中)</option>
+            <option value="NRND">NRND (不推荐新设计)</option>
+            <option value="EOL">EOL (停产)</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-primary" onclick="exportMaterials()"><i class="bi bi-download"></i> 导出</button>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateMat"><i class="bi bi-plus-lg"></i> 新建物料</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="data-table" id="matTable">
+        <thead><tr><th>编码</th><th>制造商</th><th title="Manufacturer Part Number (制造商型号)">MPN (型号)</th><th>描述</th><th>分类</th><th>封装</th><th>状态</th><th></th></tr></thead>
+        <tbody id="matBody"></tbody>
+      </table></div></div></div>
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="text-muted small" id="matCount"></div>
+        <div class="d-flex align-items-center gap-2">
+          <select class="form-select form-select-sm" id="matPageSize" style="width:80px" onchange="_matFilterChange()">
+            <option value="20">20条</option>
+            <option value="50" selected>50条</option>
+            <option value="100">100条</option>
+            <option value="200">200条</option>
+          </select>
+          <nav id="matPaging"></nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BOM ==================== -->
+    <div class="page-section" id="page-boms">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-2">
+          <div class="search-box"><i class="bi bi-search"></i>
+            <input type="text" class="form-control form-control-sm" id="bomKeyword" placeholder="搜索板卡名称..." style="width:200px" oninput="debounce(_bomSearchReset,400)()">
+          </div>
+          <select class="form-select form-select-sm" id="bomStatusFilter" style="width:160px" onchange="_bomSearchReset()">
+            <option value="">全部状态</option>
+            <option value="Draft">Draft (草稿)</option>
+            <option value="Released">Released (已发布)</option>
+            <option value="Obsolete">Obsolete (已废弃)</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCompareBom"><i class="bi bi-arrow-left-right"></i> 版本对比</button>
+          <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportBom"><i class="bi bi-upload"></i> 导入 BOM</button>
+        </div>
+      </div>
+      <div id="bomGrouped"></div>
+      <div class="d-flex justify-content-between align-items-center mt-3" id="bomPaging"></div>
+    </div>
+
+    <!-- ==================== Calculation ==================== -->
+    <div class="page-section" id="page-calc">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div></div>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateCalc"><i class="bi bi-plus-lg"></i> 新建汇算</button>
+      </div>
+      <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="data-table">
+        <thead><tr><th>ID</th><th>状态</th><th>创建时间</th><th>耗时</th><th>BOM 数</th><th>物料数</th><th></th></tr></thead>
+        <tbody id="calcBody"></tbody>
+      </table></div></div></div>
+    </div>
+
+    <!-- ==================== Categories ==================== -->
+    <div class="page-section" id="page-categories">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="small text-muted">管理物料分类，支持两级层级结构（父分类 → 子分类）</div>
+        <button class="btn btn-sm btn-primary" onclick="showAddParentCat()"><i class="bi bi-plus-lg"></i> 新建父分类</button>
+      </div>
+      <!-- 新建父分类表单 -->
+      <div id="addParentCatForm" class="card mb-3" style="display:none"><div class="card-body">
+        <div class="small fw-semibold mb-2">新建父分类</div>
+        <div class="row g-2">
+          <div class="col-4"><label class="form-label small">名称 *</label><input class="form-control form-control-sm" id="apc_name" placeholder="如 晶振"></div>
+          <div class="col-3"><label class="form-label small">前缀 *</label><input class="form-control form-control-sm" id="apc_prefix" placeholder="如 OSC"></div>
+          <div class="col-2"><label class="form-label small">损耗率</label><input class="form-control form-control-sm" id="apc_loss" type="number" step="0.01" value="0.03"></div>
+          <div class="col-3 d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-primary" onclick="addParentCategory()">创建</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="$('#addParentCatForm').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div></div>
+      <!-- 新建子分类表单 -->
+      <div id="addChildCatForm" class="card mb-3" style="display:none"><div class="card-body">
+        <div class="small fw-semibold mb-2">新建子分类 → 父分类: <span id="acc_parent_name" class="text-primary"></span></div>
+        <input type="hidden" id="acc_parent_id">
+        <div class="row g-2">
+          <div class="col-4"><label class="form-label small">名称 *</label><input class="form-control form-control-sm" id="acc_name" placeholder="如 贴片电阻"></div>
+          <div class="col-3"><label class="form-label small">前缀 *</label><input class="form-control form-control-sm" id="acc_prefix" placeholder="如 RES-SMD"></div>
+          <div class="col-2"><label class="form-label small">损耗率</label><input class="form-control form-control-sm" id="acc_loss" type="number" step="0.01" value="0.03"></div>
+          <div class="col-3 d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-primary" onclick="addChildCategory()">创建</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="$('#addChildCatForm').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div></div>
+      <!-- 编辑分类表单 -->
+      <div id="editCatForm" class="card mb-3" style="display:none"><div class="card-body">
+        <div class="small fw-semibold mb-2">编辑分类: <span id="ec_name_display" class="text-primary"></span></div>
+        <input type="hidden" id="ec_id">
+        <div class="row g-2">
+          <div class="col-4"><label class="form-label small">名称 *</label><input class="form-control form-control-sm" id="ec_name"></div>
+          <div class="col-3"><label class="form-label small">前缀 *</label><input class="form-control form-control-sm" id="ec_prefix"></div>
+          <div class="col-2"><label class="form-label small">损耗率</label><input class="form-control form-control-sm" id="ec_loss" type="number" step="0.01" min="0" max="1"></div>
+          <div class="col-3 d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-primary" onclick="saveCatEdit()">保存</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="$('#editCatForm').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div></div>
+      <!-- 分类树 -->
+      <div class="card"><div class="card-body p-0">
+        <div id="catTree"></div>
+      </div></div>
+    </div>
+
+    <!-- ==================== Footprints ==================== -->
+    <div class="page-section" id="page-footprints">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="small text-muted">封装数据来源于物料库中实际使用的封装，<span id="fpStats" class="text-primary"></span></div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success" id="fpBatchRegBtn" onclick="batchRegisterFootprints()" style="display:none"><i class="bi bi-check2-all"></i> 批量注册未注册封装</button>
+          <button class="btn btn-sm btn-primary" onclick="showAddFootprint()"><i class="bi bi-plus-lg"></i> 新建封装</button>
+        </div>
+      </div>
+      <!-- 新建/编辑封装表单 -->
+      <div id="fpForm" class="card mb-3" style="display:none"><div class="card-body">
+        <div class="small fw-semibold mb-2" id="fpFormTitle">新建封装</div>
+        <input type="hidden" id="fp_edit_id">
+        <div class="row g-2">
+          <div class="col-4"><label class="form-label small">名称 *</label><input class="form-control form-control-sm" id="fp_name" placeholder="如 QFN-48"></div>
+          <div class="col-5"><label class="form-label small">描述</label><input class="form-control form-control-sm" id="fp_desc" placeholder="如 无引脚方形扁平 48脚"></div>
+          <div class="col-3 d-flex align-items-end gap-2">
+            <button class="btn btn-sm btn-primary" onclick="saveFootprint()">保存</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="$('#fpForm').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div></div>
+      <!-- 封装列表 -->
+      <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="data-table">
+        <thead><tr><th>名称</th><th>描述</th><th style="width:90px">物料引用</th><th style="width:80px">状态</th><th style="width:130px"></th></tr></thead>
+        <tbody id="fpBody"></tbody>
+      </table></div></div></div>
+    </div>
+
+    <!-- ==================== Audit ==================== -->
+    <div class="page-section" id="page-audit">
+      <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="data-table">
+        <thead><tr><th>时间</th><th>操作人</th><th>操作</th><th>对象</th><th>详情</th></tr></thead>
+        <tbody id="auditBody"></tbody>
+      </table></div></div></div>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .main -->
+
+<!-- Toast container -->
+<div class="toast-container" id="toastBox"></div>
+
+<!-- ==================== Modals ==================== -->
+
+<!-- Create Material -->
+<div class="modal fade" id="modalCreateMat" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title">新建物料</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-2">
+      <div class="col-6"><label class="form-label small">制造商 *</label><input class="form-control form-control-sm" id="cm_mfr" placeholder="如 Yageo"></div>
+      <div class="col-6"><label class="form-label small" title="Manufacturer Part Number，制造商零件编号">MPN <span class="text-muted">(制造商型号)</span> *</label><input class="form-control form-control-sm" id="cm_mpn" placeholder="如 RC0402FR-0710KL"></div>
+      <div class="col-12"><label class="form-label small">描述 *</label><input class="form-control form-control-sm" id="cm_desc" placeholder="如 10KΩ 0402 1%"></div>
+      <div class="col-4">
+        <label class="form-label small">分类 *</label>
+        <div class="d-flex gap-1">
+          <select class="form-select form-select-sm" id="cm_cat" style="flex:1"></select>
+          <button class="btn btn-sm btn-outline-primary px-2" onclick="showAddCategory()" title="添加新分类"><i class="bi bi-plus-lg"></i></button>
+        </div>
+      </div>
+      <div class="col-4"><label class="form-label small">封装 <span class="text-muted">(Package)</span></label>
+        <select class="form-select form-select-sm mb-1" id="cm_fp_sel" onchange="if(this.value)$('#cm_fp').value=this.value">
+          <option value="">-- 选择封装 --</option>
+        </select>
+        <input class="form-control form-control-sm" id="cm_fp" placeholder="或手动输入，如 0402"></div>
+      <div class="col-4"><label class="form-label small">生命周期状态</label><select class="form-select form-select-sm" id="cm_status">
+        <option value="Active">Active (量产中)</option><option value="NRND">NRND (不推荐新设计)</option><option value="EOL">EOL (停产)</option>
+      </select></div>
+      <div class="col-4"><label class="form-label small" title="Minimum Order Quantity，最小起订量">MOQ <span class="text-muted">(最小起订量)</span></label><input class="form-control form-control-sm" id="cm_moq" type="number" value="1" min="1"></div>
+      <div class="col-4"><label class="form-label small" title="Standard Pack Quantity，标准包装数量/整包数量">SPQ <span class="text-muted">(标准包装量)</span></label><input class="form-control form-control-sm" id="cm_spq" type="number" value="1" min="1"></div>
+    </div>
+    <!-- 添加分类内嵌表单 -->
+    <div id="addCatForm" class="mt-2 p-2 border rounded bg-light" style="display:none">
+      <div class="small fw-semibold mb-1">新建分类</div>
+      <div class="row g-1">
+        <div class="col-3">
+          <select class="form-select form-select-sm" id="newCatParent">
+            <option value="">-- 新建父分类 --</option>
+          </select>
+        </div>
+        <div class="col-3"><input class="form-control form-control-sm" id="newCatName" placeholder="分类名称"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="newCatPrefix" placeholder="前缀"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="newCatLoss" type="number" step="0.01" value="0.03" placeholder="损耗率"></div>
+        <div class="col-2"><button class="btn btn-sm btn-primary w-100" onclick="addCategory()">添加</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+    <button class="btn btn-sm btn-primary" onclick="createMaterial()">创建</button></div>
+</div></div></div>
+
+<!-- Material Detail / Edit -->
+<div class="modal fade" id="modalMatDetail" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title" id="matDetailTitle">物料详情</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="matDetailBody"></div>
+  <div class="modal-footer" id="matDetailFooter" style="display:none">
+    <button class="btn btn-sm btn-secondary" onclick="cancelMatEdit()">取消</button>
+    <button class="btn btn-sm btn-primary" onclick="saveMatEdit()">保存修改</button>
+  </div>
+</div></div></div>
+
+<!-- BOM Detail -->
+<div class="modal fade" id="modalBomDetail" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title" id="bomDetailTitle">BOM 详情</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="bomDetailBody"></div>
+</div></div></div>
+
+<!-- Import BOM - 3-Step Wizard -->
+<div class="modal fade" id="modalImportBom" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header">
+    <h6 class="modal-title">导入 BOM</h6>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge rounded-pill bg-primary" id="ib_stepBadge">1 / 3</span>
+      <button class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+  </div>
+  <div class="modal-body" style="min-height:360px">
+
+    <!-- Step 1: Upload -->
+    <div id="ib_step1">
+      <div class="mb-3"><label class="form-label small">选择 BOM 文件 (CSV / Excel)</label>
+        <input class="form-control form-control-sm" id="ib_file" type="file" accept=".csv,.xlsx,.xls"></div>
+      <div class="mb-3"><label class="form-label small">板卡名称 *</label>
+        <input class="form-control form-control-sm" id="ib_board" placeholder="如 MainBoard"></div>
+      <div class="row g-2">
+        <div class="col-6"><label class="form-label small">版本号</label><input class="form-control form-control-sm" id="ib_ver" value="Rev1.0"></div>
+        <div class="col-6"><label class="form-label small">版本说明</label><input class="form-control form-control-sm" id="ib_notes"></div>
+      </div>
+      <div id="ib_uploadStatus" class="mt-3"></div>
+    </div>
+
+    <!-- Step 2: Column Mapping -->
+    <div id="ib_step2" style="display:none">
+      <p class="small text-muted mb-2">系统检测到 <strong id="ib_colCount"></strong> 列，共 <strong id="ib_rowCount"></strong> 行数据。请为每个系统字段指定对应的文件列：</p>
+      <div class="row g-2 mb-3" id="ib_mappingArea"></div>
+      <label class="form-label small mt-2">数据预览 (前 5 行)：</label>
+      <div class="table-responsive" style="max-height:200px;overflow-y:auto"><table class="data-table" id="ib_previewTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <!-- Step 3: Validate & Confirm -->
+    <div id="ib_step3" style="display:none">
+      <div id="ib_validateResult"></div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-sm btn-secondary" id="ib_btnBack" style="display:none" onclick="ibBack()">上一步</button>
+    <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+    <button class="btn btn-sm btn-primary" id="ib_btnNext" onclick="ibNext()">下一步</button>
+  </div>
+</div></div></div>
+
+<!-- BOM Compare -->
+<div class="modal fade" id="modalCompareBom" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title">BOM 版本对比</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-2 mb-3">
+      <div class="col-5"><label class="form-label small">BOM A</label><select class="form-select form-select-sm" id="cmp_a"></select></div>
+      <div class="col-2 text-center pt-4"><i class="bi bi-arrow-left-right fs-4 text-muted"></i></div>
+      <div class="col-5"><label class="form-label small">BOM B</label><select class="form-select form-select-sm" id="cmp_b"></select></div>
+    </div>
+    <div id="cmp_result"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">关闭</button>
+    <button class="btn btn-sm btn-primary" onclick="compareBoms()">对比</button></div>
+</div></div></div>
+
+<!-- Create Calculation -->
+<div class="modal fade" id="modalCreateCalc" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title">新建汇算任务</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <p class="small text-muted">选择已发布的 BOM 并输入各自的生产数量：</p>
+    <div id="calcBomList"></div>
+    <button class="btn btn-sm btn-outline-secondary mt-2" onclick="addCalcRow()"><i class="bi bi-plus"></i> 添加 BOM</button>
+  </div>
+  <div class="modal-footer"><button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">取消</button>
+    <button class="btn btn-sm btn-primary" onclick="createCalc()">开始汇算</button></div>
+</div></div></div>
+
+<!-- Calc Detail -->
+<div class="modal fade" id="modalCalcDetail" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
+  <div class="modal-header"><h6 class="modal-title" id="calcDetailTitle">汇算详情</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="calcDetailBody"></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ======================================================================
+// Utilities
+// ======================================================================
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+let _debounceTimers = {};
+function debounce(fn, ms) { return (...a) => { clearTimeout(_debounceTimers[fn.name]); _debounceTimers[fn.name] = setTimeout(() => fn(...a), ms); }; }
+
+/** 显示字段：空白值用 "--" 替代，支持截断 */
+function df(v, fb, max) {
+  if (v === null || v === undefined || v === '' || v === 'nan') return fb || '--';
+  const s = String(v);
+  return max && s.length > max ? s.substring(0, max) : s;
+}
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const j = await r.json();
+  if (j.code !== 200) throw new Error(j.message || '请求失败');
+  return j;
+}
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast show align-items-center text-bg-${type} border-0`;
+  el.setAttribute('role','alert');
+  el.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+  $('#toastBox').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function statusBadge(s) {
+  const labels = {Active:'量产中',NRND:'不推荐新设计',EOL:'停产',Draft:'草稿',Released:'已发布',Obsolete:'已废弃',Pending:'等待中',Running:'运行中',Completed:'已完成',Failed:'失败'};
+  const colors = {Active:'badge-active',NRND:'badge-nrnd',EOL:'badge-eol',Draft:'badge-draft',Released:'badge-released',Obsolete:'badge-obsolete',Pending:'badge-pending',Running:'badge-running',Completed:'badge-completed',Failed:'badge-failed'};
+  const display = labels[s] ? `${s} (${labels[s]})` : s;
+  return `<span class="badge ${colors[s]||'bg-secondary'}">${display}</span>`;
+}
+
+function fmtDate(d) { return d ? d.replace('T',' ').substring(0,19) : '-'; }
+
+// ======================================================================
+// Navigation
+// ======================================================================
+
+const pageTitles = {dashboard:'仪表盘',materials:'物料库',boms:'BOM 管理',calc:'物料汇算',categories:'分类管理',footprints:'封装管理',audit:'操作日志'};
+const pageLoaders = {dashboard:loadDashboard,materials:loadMaterials,boms:loadBoms,calc:loadCalcs,categories:loadCategoriesTree,footprints:loadFootprints,audit:loadAudit};
+
+$$('.sidebar nav a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const page = a.dataset.page;
+    $$('.sidebar nav a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    $$('.page-section').forEach(s => s.classList.remove('active'));
+    $(`#page-${page}`).classList.add('active');
+    $('#pageTitle').textContent = pageTitles[page] || page;
+    if (pageLoaders[page]) pageLoaders[page]();
+  });
+});
+
+// ======================================================================
+// Dashboard
+// ======================================================================
+
+async function loadDashboard() {
+  const [stats, calcRes, auditRes] = await Promise.all([
+    api('/api/stats'),
+    api('/api/calculations?limit=5'),
+    api('/api/audit-logs?limit=8'),
+  ]);
+  const s = stats.data;
+  const cards = [
+    {label:'物料总数',num:s.materials,icon:'bi-box-seam',bg:'#dbeafe',color:'#2563eb'},
+    {label:'BOM 总数',num:s.boms_total,icon:'bi-clipboard-data',bg:'#dcfce7',color:'#16a34a',sub:`已发布 ${s.boms_released}`},
+    {label:'汇算任务',num:s.calc_tasks,icon:'bi-calculator',bg:'#fef3c7',color:'#d97706',sub:`已完成 ${s.calc_completed}`},
+    {label:'NRND/EOL 物料',num:s.nrnd_eol,icon:'bi-exclamation-triangle',bg:s.nrnd_eol>0?'#fee2e2':'#f1f5f9',color:s.nrnd_eol>0?'#dc2626':'#64748b'},
+  ];
+  $('#statsRow').innerHTML = cards.map(c => `
+    <div class="col-6 col-md-3"><div class="stat-card d-flex justify-content-between">
+      <div><div class="num">${c.num}</div><div class="label">${c.label}${c.sub?' · '+c.sub:''}</div></div>
+      <div class="icon" style="background:${c.bg};color:${c.color}"><i class="bi ${c.icon}"></i></div>
+    </div></div>`).join('');
+
+  // Recent calcs
+  const calcs = calcRes.data || [];
+  if (calcs.length) {
+    $('#recentCalc').innerHTML = `<table class="data-table"><thead><tr><th>ID</th><th>状态</th><th>创建时间</th><th>耗时</th></tr></thead><tbody>` +
+      calcs.map(c => `<tr><td>#${c.task_id}</td><td>${statusBadge(c.status)}</td><td>${fmtDate(c.created_at)}</td><td>${c.duration_ms?c.duration_ms+'ms':'-'}</td></tr>`).join('') +
+      '</tbody></table>';
+  } else { $('#recentCalc').innerHTML = '<div class="empty-state py-4"><i class="bi bi-inbox"></i><p>暂无汇算任务</p></div>'; }
+
+  // Recent audit
+  const logs = auditRes.data || [];
+  if (logs.length) {
+    $('#recentAudit').innerHTML = `<table class="data-table"><thead><tr><th>时间</th><th>操作</th><th>对象</th></tr></thead><tbody>` +
+      logs.map(l => `<tr><td class="text-nowrap">${fmtDate(l.timestamp)}</td><td><code class="small">${l.action}</code></td><td>${df(l.target_type)} ${df(l.target_id, '')}</td></tr>`).join('') +
+      '</tbody></table>';
+  } else { $('#recentAudit').innerHTML = '<div class="empty-state py-4"><i class="bi bi-journal"></i><p>暂无日志</p></div>'; }
+}
+
+// ======================================================================
+// Materials
+// ======================================================================
+
+let _categories = [];
+let _footprintOptions = [];
+let _matPage = 1;
+let _matManufacturers = [];
+
+function _matFilterChange() { _matPage = 1; loadMaterials(); }
+function _matSearchReset() { _matPage = 1; loadMaterials(); }
+
+async function loadMaterials() {
+  // Load category tree (once)
+  if (!_categories.length) {
+    const catRes = await api('/api/categories/tree');
+    _categories = catRes.data;
+    const sel = $('#matCatFilter');
+    if (sel.options.length <= 1) {
+      _categories.forEach(p => {
+        const og = document.createElement('optgroup');
+        og.label = `${p.name} (${p.code_prefix})`;
+        (p.children || []).forEach(c => {
+          const o = document.createElement('option');
+          o.value = c.code_prefix; o.textContent = `${c.name} (${c.code_prefix})`;
+          og.appendChild(o);
+        });
+        if (p.children && p.children.length) sel.appendChild(og);
+        else { const o = document.createElement('option'); o.value = p.code_prefix; o.textContent = `${p.name} (${p.code_prefix})`; sel.appendChild(o); }
+      });
+    }
+    // Build create material category dropdown (flat with indent)
+    const cmSel = $('#cm_cat');
+    if (!cmSel.options.length) {
+      _categories.forEach(p => {
+        const og = document.createElement('optgroup');
+        og.label = `${p.name} (${p.code_prefix})`;
+        (p.children || []).forEach(c => {
+          const o = document.createElement('option');
+          o.value = c.code_prefix; o.textContent = `${c.name} (${c.code_prefix})`;
+          og.appendChild(o);
+        });
+        if (p.children && p.children.length) cmSel.appendChild(og);
+        else { const o = document.createElement('option'); o.value = p.code_prefix; o.textContent = `${p.name} (${p.code_prefix})`; cmSel.appendChild(o); }
+      });
+    }
+  }
+  // Load footprint options (once)
+  if (!_footprintOptions.length) {
+    const fpRes = await api('/api/footprints');
+    _footprintOptions = fpRes.data || [];
+    // Build footprint filter dropdown
+    const fpFilter = $('#matFpFilter');
+    if (fpFilter.options.length <= 1) {
+      _footprintOptions.forEach(fp => {
+        const o = document.createElement('option');
+        o.value = fp.name; o.textContent = fp.name;
+        fpFilter.appendChild(o);
+      });
+    }
+    // Build footprint dropdown for create form
+    const fpSel = $('#cm_fp_sel');
+    if (fpSel && !fpSel.options.length) {
+      fpSel.innerHTML = '<option value="">-- 选择或手动输入 --</option>';
+      _footprintOptions.forEach(fp => {
+        const o = document.createElement('option');
+        o.value = fp.name; o.textContent = `${fp.name}${fp.description ? ' - ' + fp.description : ''}`;
+        fpSel.appendChild(o);
+      });
+    }
+  }
+  // Load manufacturers (once)
+  if (!_matManufacturers.length) {
+    const mfrRes = await api('/api/manufacturers');
+    _matManufacturers = mfrRes.data || [];
+    const mfrFilter = $('#matMfrFilter');
+    if (mfrFilter.options.length <= 1) {
+      _matManufacturers.forEach(mfr => {
+        const o = document.createElement('option');
+        o.value = mfr.name; o.textContent = mfr.name;
+        mfrFilter.appendChild(o);
+      });
+    }
+  }
+  // Build query params
+  const kw = $('#matSearch').value;
+  const cat = $('#matCatFilter').value;
+  const mfr = $('#matMfrFilter').value;
+  const fp = $('#matFpFilter').value;
+  const st = $('#matStatusFilter').value;
+  const pageSize = parseInt($('#matPageSize').value) || 50;
+  const offset = (_matPage - 1) * pageSize;
+  const params = new URLSearchParams({keyword:kw,category:cat,manufacturer:mfr,footprint:fp,status:st,limit:pageSize,offset:offset});
+  const res = await api(`/api/materials?${params}`);
+  const items = res.data.items;
+  const total = res.data.total;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  $('#matBody').innerHTML = items.length ? items.map(m => `
+    <tr>
+      <td><a href="#" onclick="showMatDetail('${m.part_number}')" class="text-decoration-none fw-semibold">${m.part_number}</a></td>
+      <td>${df(m.manufacturer_name)}</td>
+      <td><code>${df(m.mpn)}</code></td>
+      <td>${df(m.description, '--', 30)}</td>
+      <td>${df(m.category_name)}</td>
+      <td>${df(m.footprint)}</td>
+      <td>${statusBadge(m.lifecycle_status)}</td>
+      <td class="text-nowrap">
+        <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="editMaterial('${m.part_number}')" title="编辑"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="delMaterial('${m.part_number}')" title="删除"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="8" class="text-center text-muted py-4">暂无物料数据</td></tr>`;
+
+  // Count info
+  const start = total > 0 ? offset + 1 : 0;
+  const end = Math.min(offset + items.length, total);
+  $('#matCount').textContent = `显示 ${start}-${end}，共 ${total} 条记录`;
+
+  // Pagination
+  _renderMatPaging(totalPages);
+}
+
+function _renderMatPaging(totalPages) {
+  const nav = $('#matPaging');
+  if (totalPages <= 1) { nav.innerHTML = ''; return; }
+  let html = '<ul class="pagination pagination-sm mb-0">';
+  // Prev
+  html += `<li class="page-item${_matPage<=1?' disabled':''}"><a class="page-link" href="#" onclick="gotoMatPage(${_matPage-1});return false">&laquo;</a></li>`;
+  // Page numbers (show max 7 pages around current)
+  const range = [];
+  let start = Math.max(1, _matPage - 3);
+  let end = Math.min(totalPages, start + 6);
+  if (end - start < 6) start = Math.max(1, end - 6);
+  for (let i = start; i <= end; i++) range.push(i);
+  if (start > 1) { html += `<li class="page-item"><a class="page-link" href="#" onclick="gotoMatPage(1);return false">1</a></li>`; if (start > 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`; }
+  range.forEach(p => {
+    html += `<li class="page-item${p===_matPage?' active':''}"><a class="page-link" href="#" onclick="gotoMatPage(${p});return false">${p}</a></li>`;
+  });
+  if (end < totalPages) { if (end < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`; html += `<li class="page-item"><a class="page-link" href="#" onclick="gotoMatPage(${totalPages});return false">${totalPages}</a></li>`; }
+  // Next
+  html += `<li class="page-item${_matPage>=totalPages?' disabled':''}"><a class="page-link" href="#" onclick="gotoMatPage(${_matPage+1});return false">&raquo;</a></li>`;
+  html += '</ul>';
+  nav.innerHTML = html;
+}
+
+function gotoMatPage(page) {
+  _matPage = page;
+  loadMaterials();
+}
+
+async function showMatDetail(pn) {
+  const res = await api(`/api/materials/${pn}`);
+  const m = res.data;
+  $('#matDetailTitle').textContent = `物料详情 - ${m.part_number}`;
+  // Check if part_number prefix matches category prefix
+  const prefixMatch = m.code_prefix && m.part_number.startsWith(m.code_prefix + '-');
+  const mismatchBanner = !prefixMatch && m.code_prefix
+    ? `<div class="alert alert-warning py-2 small mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>编码前缀 <code>${m.part_number.split('-')[0]}</code> 与分类前缀 <code>${m.code_prefix}</code> 不匹配（分类可能已被修改）</span>
+        <button class="btn btn-sm btn-warning ms-auto" onclick="recodeMaterial('${m.part_number}')"><i class="bi bi-arrow-repeat"></i> 重新编码</button>
+      </div>` : '';
+  $('#matDetailBody').innerHTML = `${mismatchBanner}<dl class="detail-grid">
+    <dt>物料编码</dt><dd class="fw-bold">${m.part_number}${!prefixMatch && m.code_prefix ? ' <span class="badge bg-warning text-dark">编码待修正</span>' : ''}</dd>
+    <dt>制造商</dt><dd>${df(m.manufacturer_name)}</dd>
+    <dt>MPN (制造商型号)</dt><dd><code>${df(m.mpn)}</code></dd>
+    <dt>描述</dt><dd>${df(m.description)}</dd>
+    <dt>分类</dt><dd>${df(m.category_name)} (${df(m.code_prefix, '')})</dd>
+    <dt>数值</dt><dd>${df(m.value)} ${df(m.unit, '')}</dd>
+    <dt>封装 (Package)</dt><dd>${df(m.footprint)}</dd>
+    <dt>生命周期状态</dt><dd>${statusBadge(m.lifecycle_status)}</dd>
+    <dt>MOQ (最小起订量)</dt><dd>${df(m.moq)}</dd>
+    <dt>SPQ (标准包装量)</dt><dd>${df(m.spq)}</dd>
+    <dt>库存</dt><dd>${df(m.stock_qty)}</dd>
+    <dt>规格书</dt><dd>${m.datasheet_url?`<a href="${m.datasheet_url}" target="_blank">链接</a>`:'--'}</dd>
+    <dt>创建时间</dt><dd>${df(fmtDate(m.created_at))}</dd>
+    <dt>更新时间</dt><dd>${df(fmtDate(m.updated_at))}</dd>
+  </dl>
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-sm btn-outline-primary" onclick="editMaterial('${pn}')"><i class="bi bi-pencil"></i> 编辑此物料</button>
+    ${!prefixMatch && m.code_prefix ? `<button class="btn btn-sm btn-outline-warning" onclick="recodeMaterial('${pn}')"><i class="bi bi-arrow-repeat"></i> 重新生成编码</button>` : ''}
+  </div>`;
+  $('#matDetailFooter').style.display = 'none';
+  new bootstrap.Modal('#modalMatDetail').show();
+}
+
+async function createMaterial() {
+  const d = {
+    manufacturer: $('#cm_mfr').value.trim(),
+    mpn: $('#cm_mpn').value.trim(),
+    description: $('#cm_desc').value.trim(),
+    category: $('#cm_cat').value,
+    footprint: $('#cm_fp').value.trim(),
+    lifecycle_status: $('#cm_status').value,
+    moq: $('#cm_moq').value || 1,
+    spq: $('#cm_spq').value || 1,
+  };
+  if (!d.manufacturer || !d.mpn || !d.description || !d.category) { toast('请填写必填项','danger'); return; }
+  try {
+    const res = await api('/api/materials', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    toast(res.message);
+    bootstrap.Modal.getInstance('#modalCreateMat').hide();
+    _matManufacturers = []; // refresh manufacturer filter
+    _footprintOptions = []; // refresh footprint filter
+    loadMaterials();
+  } catch(e) { toast(e.message,'danger'); }
+}
+
+async function delMaterial(pn) {
+  if (!confirm(`确认删除物料 ${pn}？`)) return;
+  try { await api(`/api/materials/${pn}`,{method:'DELETE'}); toast('删除成功'); _matManufacturers = []; _footprintOptions = []; loadMaterials(); }
+  catch(e) { toast(e.message,'danger'); }
+}
+
+async function recodeMaterial(pn) {
+  if (!confirm(`确认重新生成物料编码？\n当前编码: ${pn}\n\n系统将根据当前分类生成新编码，并自动更新所有 BOM 中的引用。`)) return;
+  try {
+    const res = await api(`/api/materials/${pn}/recode`, {method:'POST'});
+    const d = res.data;
+    toast(`编码已更新: ${d.old_part_number} → ${d.new_part_number}`);
+    // Close any open modal and refresh
+    const modal = bootstrap.Modal.getInstance('#modalMatDetail');
+    if (modal) modal.hide();
+    $('#matDetailFooter').style.display = 'none';
+    _categories = []; // reset cache so dropdowns refresh
+    _matManufacturers = [];
+    _footprintOptions = [];
+    loadMaterials();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+function exportMaterials() { window.location.href = '/api/materials/export?fmt=xlsx'; }
+
+// ---- Category Management ----
+function showAddCategory() {
+  const f = $('#addCatForm');
+  if (f.style.display === 'none') {
+    // Populate parent category dropdown
+    const parentSel = $('#newCatParent');
+    parentSel.innerHTML = '<option value="">-- 新建父分类 --</option>';
+    _categories.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = `${p.name} (${p.code_prefix})`;
+      parentSel.appendChild(o);
+    });
+    f.style.display = '';
+  } else {
+    f.style.display = 'none';
+  }
+}
+async function addCategory() {
+  const parentId = $('#newCatParent').value;
+  const name = $('#newCatName').value.trim();
+  const prefix = $('#newCatPrefix').value.trim().toUpperCase();
+  const loss = parseFloat($('#newCatLoss').value) || 0.03;
+  if (!name || !prefix) { toast('请填写分类名称和前缀', 'warning'); return; }
+  try {
+    const body = {name, code_prefix:prefix, default_loss_rate:loss};
+    if (parentId) body.parent_id = parseInt(parentId);
+    await api('/api/categories', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    toast(`分类 ${name} (${prefix}) 已创建`);
+    // Refresh category dropdowns
+    _categories = [];
+    $('#addCatForm').style.display = 'none';
+    $('#newCatName').value = ''; $('#newCatPrefix').value = '';
+    loadMaterials();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ---- Material Editing ----
+let _editMatPn = '';
+async function editMaterial(pn) {
+  const res = await api(`/api/materials/${pn}`);
+  const m = res.data;
+  _editMatPn = pn;
+  $('#matDetailTitle').textContent = `编辑物料 - ${pn}`;
+  // Build hierarchical category options
+  if (!_categories.length) {
+    const catRes = await api('/api/categories/tree');
+    _categories = catRes.data;
+  }
+  let catOptions = '';
+  _categories.forEach(p => {
+    catOptions += `<optgroup label="${p.name} (${p.code_prefix})">`;
+    (p.children || []).forEach(c => {
+      catOptions += `<option value="${c.code_prefix}" ${c.code_prefix===m.code_prefix?'selected':''}>${c.name} (${c.code_prefix})</option>`;
+    });
+    if (!p.children || !p.children.length) {
+      catOptions += `<option value="${p.code_prefix}" ${p.code_prefix===m.code_prefix?'selected':''}>${p.name} (${p.code_prefix})</option>`;
+    }
+    catOptions += '</optgroup>';
+  });
+  // Build footprint options
+  if (!_footprintOptions.length) {
+    const fpRes = await api('/api/footprints');
+    _footprintOptions = fpRes.data || [];
+  }
+  let fpOptions = '<option value="">-- 选择或手动输入 --</option>';
+  _footprintOptions.forEach(fp => {
+    const sel = fp.name === m.footprint ? ' selected' : '';
+    fpOptions += `<option value="${fp.name}"${sel}>${fp.name}${fp.description ? ' - ' + fp.description : ''}</option>`;
+  });
+  $('#matDetailBody').innerHTML = `
+    <div class="row g-2">
+      <div class="col-6"><label class="form-label small">物料编码</label><input class="form-control form-control-sm" value="${pn}" disabled></div>
+      <div class="col-6"><label class="form-label small">MPN <span class="text-muted">(制造商型号)</span></label><input class="form-control form-control-sm" id="em_mpn" value="${m.mpn||''}"></div>
+      <div class="col-6"><label class="form-label small">制造商</label><input class="form-control form-control-sm" id="em_mfr" value="${m.manufacturer_name||''}"></div>
+      <div class="col-6"><label class="form-label small">描述</label><input class="form-control form-control-sm" id="em_desc" value="${m.description||''}"></div>
+      <div class="col-4"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="em_cat">${catOptions}</select></div>
+      <div class="col-4"><label class="form-label small">封装 <span class="text-muted">(Package)</span></label>
+        <select class="form-select form-select-sm mb-1" id="em_fp_sel" onchange="if(this.value)document.getElementById('em_fp').value=this.value">${fpOptions}</select>
+        <input class="form-control form-control-sm" id="em_fp" value="${m.footprint||''}" placeholder="手动输入"></div>
+      <div class="col-4"><label class="form-label small">生命周期状态</label><select class="form-select form-select-sm" id="em_status">
+        <option value="Active" ${m.lifecycle_status==='Active'?'selected':''}>Active (量产中)</option>
+        <option value="NRND" ${m.lifecycle_status==='NRND'?'selected':''}>NRND (不推荐新设计)</option>
+        <option value="EOL" ${m.lifecycle_status==='EOL'?'selected':''}>EOL (停产)</option>
+      </select></div>
+      <div class="col-4"><label class="form-label small" title="Minimum Order Quantity (最小起订量)">MOQ <span class="text-muted">(最小起订量)</span></label><input class="form-control form-control-sm" id="em_moq" type="number" value="${m.moq||1}" min="1"></div>
+      <div class="col-4"><label class="form-label small" title="Standard Pack Quantity (标准包装量)">SPQ <span class="text-muted">(标准包装量)</span></label><input class="form-control form-control-sm" id="em_spq" type="number" value="${m.spq||1}" min="1"></div>
+      <div class="col-4"><label class="form-label small">库存</label><input class="form-control form-control-sm" id="em_stock" type="number" value="${m.stock_qty||0}" min="0"></div>
+    </div>
+    <div class="small text-muted mt-2">创建: ${fmtDate(m.created_at)} | 更新: ${fmtDate(m.updated_at)}</div>`;
+  $('#matDetailFooter').style.display = '';
+  new bootstrap.Modal('#modalMatDetail').show();
+}
+function cancelMatEdit() {
+  bootstrap.Modal.getInstance('#modalMatDetail').hide();
+  $('#matDetailFooter').style.display = 'none';
+}
+async function saveMatEdit() {
+  const d = {
+    mpn: $('#em_mpn').value.trim(),
+    manufacturer: $('#em_mfr').value.trim(),
+    description: $('#em_desc').value.trim(),
+    footprint: $('#em_fp').value.trim(),
+    lifecycle_status: $('#em_status').value,
+    moq: parseInt($('#em_moq').value) || 1,
+    spq: parseInt($('#em_spq').value) || 1,
+    stock_qty: parseInt($('#em_stock').value) || 0,
+  };
+  // Update category if changed - search in tree structure
+  const newCatPrefix = $('#em_cat').value;
+  if (newCatPrefix) {
+    let foundCat = null;
+    for (const p of _categories) {
+      if (p.code_prefix === newCatPrefix) { foundCat = p; break; }
+      for (const c of (p.children || [])) {
+        if (c.code_prefix === newCatPrefix) { foundCat = c; break; }
+      }
+      if (foundCat) break;
+    }
+    if (foundCat) d.category_id = foundCat.id;
+  }
+  try {
+    await api(`/api/materials/${_editMatPn}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
+    toast('物料已更新');
+    bootstrap.Modal.getInstance('#modalMatDetail').hide();
+    $('#matDetailFooter').style.display = 'none';
+    _matManufacturers = []; // refresh manufacturer filter
+    _footprintOptions = []; // refresh footprint filter
+    // Check if recode is needed after category change
+    if (newCatPrefix && !_editMatPn.startsWith(newCatPrefix + '-')) {
+      setTimeout(() => {
+        if (confirm(`物料编码 ${_editMatPn} 与分类前缀 ${newCatPrefix} 不匹配。\n是否立即重新生成编码？`)) {
+          recodeMaterial(_editMatPn);
+        } else {
+          loadMaterials();
+        }
+      }, 300);
+    } else {
+      loadMaterials();
+    }
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ---- BOM Editing ----
+async function showBomDetail(id) {
+  const [res, versRes] = await Promise.all([
+    api(`/api/boms/${id}`),
+    api(`/api/boms/${id}/versions`),
+  ]);
+  const b = res.data;
+  const versions = versRes.data || [];
+  $('#bomDetailTitle').textContent = `BOM: ${b.board_name} ${b.version}`;
+  const items = b.items || [];
+  const isDraft = b.status === 'Draft';
+
+  let html = `<div class="mb-3 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div><span class="me-2">${statusBadge(b.status)}</span>
+      <span class="text-muted small">创建: ${fmtDate(b.created_at)}</span>
+      ${b.release_date?`<span class="text-muted small ms-2">发布: ${fmtDate(b.release_date)}</span>`:''}
+      ${b.parent_bom_id?`<span class="badge bg-info ms-2">基于 #${b.parent_bom_id}</span>`:''}
+      ${b.notes?`<div class="small text-muted mt-1">${b.notes}</div>`:''}
+    </div>
+    <div class="d-flex gap-2">
+      ${isDraft?`<button class="btn btn-sm btn-outline-success" onclick="releaseBom(${b.bom_id})"><i class="bi bi-check-circle"></i> 发布</button>`:''}
+      ${b.status==='Released'?`<button class="btn btn-sm btn-outline-info" onclick="cloneVersion(${b.bom_id})"><i class="bi bi-plus-circle"></i> 迭代新版本</button>`:''}
+      ${b.status==='Released'?`<button class="btn btn-sm btn-outline-warning" onclick="obsoleteBom(${b.bom_id})"><i class="bi bi-archive"></i> 废弃</button>`:''}
+    </div>
+  </div>`;
+
+  // Version history
+  if (versions.length > 1) {
+    html += '<div class="mb-3"><div class="small fw-semibold mb-1">版本历史：</div><div class="d-flex gap-2 flex-wrap">';
+    versions.forEach(v => {
+      const active = v.bom_id === b.bom_id ? 'border-primary bg-light' : '';
+      html += `<a href="#" onclick="showBomDetail(${v.bom_id});return false" class="badge bg-light text-dark border ${active} text-decoration-none">${v.version} ${statusBadge(v.status)} (${v.item_count}项)</a>`;
+    });
+    html += '</div></div>';
+  }
+
+  // Items table
+  _bomItemsMap = {};
+  items.forEach(it => { _bomItemsMap[it.id] = it; });
+  html += `<table class="data-table"><thead><tr><th>编码</th><th>MPN (型号)</th><th>描述</th><th>封装</th><th>数量</th><th>位号</th><th>状态</th>${isDraft?'<th></th>':''}</tr></thead><tbody>`;
+  items.forEach(it => {
+    const refs = it.reference_designators || '';
+    const shortRef = refs.length > 60 ? refs.substring(0,57) + '...' : refs;
+    const fp = df(it.footprint);
+    if (isDraft) {
+      html += `<tr id="bomItem_${it.id}">
+        <td class="fw-semibold">${it.part_number}</td>
+        <td><code>${df(it.mpn)}</code>
+          <button class="btn btn-sm btn-outline-info py-0 px-1 ms-1" onclick="swapBomItemMaterial(${b.bom_id},${it.id})" title="按描述更换型号"><i class="bi bi-arrow-left-right"></i></button>
+        </td>
+        <td>${df(it.description, '--', 25)}</td>
+        <td><span class="small">${fp}</span></td>
+        <td><input class="form-control form-control-sm" style="width:70px" value="${it.quantity}" onchange="updateBomItem(${b.bom_id},${it.id},'quantity',this.value)" type="number" min="1"></td>
+        <td><input class="form-control form-control-sm" style="width:180px" value="${refs}" onchange="updateBomItem(${b.bom_id},${it.id},'reference_designators',this.value)" placeholder="R1;R2;R3"></td>
+        <td>${statusBadge(it.lifecycle_status||'Active')}</td>
+        <td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeBomItem(${b.bom_id},${it.id})" title="移除"><i class="bi bi-trash"></i></button></td>
+      </tr>
+      <tr id="bomSwap_${it.id}" style="display:none"><td colspan="8"><div id="bomSwapBody_${it.id}"></div></td></tr>`;
+    } else {
+      html += `<tr><td class="fw-semibold">${it.part_number}</td><td><code>${df(it.mpn)}</code></td><td>${df(it.description, '--', 25)}</td><td><span class="small">${fp}</span></td><td>${it.quantity}</td><td class="small" title="${refs}">${df(shortRef)}</td><td>${statusBadge(it.lifecycle_status||'Active')}</td></tr>`;
+    }
+  });
+  html += '</tbody></table>';
+  html += `<div class="d-flex justify-content-between align-items-center mt-2">
+    <div class="small text-muted">共 ${items.length} 项物料</div>
+    ${isDraft?`<button class="btn btn-sm btn-outline-primary" onclick="showAddBomItem(${b.bom_id})"><i class="bi bi-plus-lg"></i> 添加物料</button>`:''}
+  </div>`;
+  // Add item inline form
+  if (isDraft) {
+    html += `<div id="addBomItemForm" class="mt-2 p-2 border rounded bg-light" style="display:none">
+      <div class="small fw-semibold mb-1">添加物料项</div>
+      <div class="row g-1">
+        <div class="col-4"><input class="form-control form-control-sm" id="abi_pn" placeholder="物料编码，如 RES-00001"></div>
+        <div class="col-2"><input class="form-control form-control-sm" id="abi_qty" type="number" value="1" min="1" placeholder="数量"></div>
+        <div class="col-4"><input class="form-control form-control-sm" id="abi_ref" placeholder="位号，如 R1;R2;R3"></div>
+        <div class="col-2"><button class="btn btn-sm btn-primary w-100" onclick="addBomItem(${b.bom_id})">添加</button></div>
+      </div>
+    </div>`;
+  }
+  $('#bomDetailBody').innerHTML = html;
+  new bootstrap.Modal('#modalBomDetail').show();
+}
+
+function showAddBomItem(bomId) {
+  const f = $('#addBomItemForm');
+  f.style.display = f.style.display === 'none' ? '' : 'none';
+}
+async function addBomItem(bomId) {
+  const pn = $('#abi_pn').value.trim();
+  const qty = parseInt($('#abi_qty').value);
+  const ref = $('#abi_ref').value.trim();
+  if (!pn || !qty) { toast('请填写物料编码和数量', 'warning'); return; }
+  try {
+    await api(`/api/boms/${bomId}/items`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({part_number:pn, quantity:qty, reference_designators:ref})});
+    toast('物料项已添加');
+    showBomDetail(bomId);
+  } catch(e) { toast(e.message, 'danger'); }
+}
+async function updateBomItem(bomId, itemId, field, value) {
+  const d = {};
+  d[field] = field === 'quantity' ? parseInt(value) : value;
+  try {
+    await api(`/api/boms/${bomId}/items/${itemId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
+  } catch(e) { toast(e.message, 'danger'); }
+}
+async function removeBomItem(bomId, itemId) {
+  if (!confirm('确认移除此物料项？')) return;
+  try {
+    await api(`/api/boms/${bomId}/items/${itemId}`, {method:'DELETE'});
+    toast('物料项已移除');
+    showBomDetail(bomId);
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function swapBomItemMaterial(bomId, itemId) {
+  const swapRow = $(`#bomSwap_${itemId}`);
+  const swapBody = $(`#bomSwapBody_${itemId}`);
+  if (!swapRow || !swapBody) return;
+  const item = _bomItemsMap[itemId];
+  if (!item) return;
+  const desc = item.description || '';
+  const currentFp = item.footprint || '';
+  // Toggle: if already visible, hide it
+  if (swapRow.style.display !== 'none') {
+    swapRow.style.display = 'none';
+    return;
+  }
+  swapBody.innerHTML = '<div class="text-muted small py-1"><i class="bi bi-hourglass-split"></i> 正在查找相同描述的替代物料...</div>';
+  swapRow.style.display = '';
+  if (!desc) {
+    swapBody.innerHTML = '<div class="alert alert-warning py-1 small mb-0">此物料无描述信息，无法查找替代型号。</div>';
+    return;
+  }
+  try {
+    const res = await api(`/api/materials/by-description?desc=${encodeURIComponent(desc)}`);
+    const items = res.data || [];
+    if (items.length <= 1) {
+      swapBody.innerHTML = `<div class="alert alert-info py-1 small mb-0">描述 "<strong>${desc}</strong>" 下仅有当前 1 个型号，无替代可选。</div>`;
+      return;
+    }
+    let html = `<div class="p-2 bg-light border rounded mb-1">
+      <div class="small fw-semibold mb-2"><i class="bi bi-arrow-left-right text-primary"></i> 同描述替代型号 (描述: ${desc})</div>
+      <div class="row g-1">`;
+    items.forEach(m => {
+      const fpDiff = currentFp && m.footprint && m.footprint !== currentFp;
+      const fpBadge = fpDiff
+        ? `<span class="badge bg-warning text-dark ms-1" title="封装不同：当前 ${currentFp} → 此型号 ${m.footprint}">封装不同: ${m.footprint}</span>`
+        : `<span class="badge bg-light text-muted ms-1">${df(m.footprint, '无封装')}</span>`;
+      html += `<div class="col-md-6">
+        <div class="d-flex align-items-center gap-2 p-1 border rounded small ${fpDiff ? 'border-warning bg-warning bg-opacity-10' : ''}">
+          <button class="btn btn-sm btn-outline-primary py-0 px-1 flex-shrink-0" onclick="confirmBomItemSwap(${bomId},${itemId},'${m.part_number}','${m.footprint||''}','${currentFp}')">选用</button>
+          <div>
+            <code class="fw-semibold">${df(m.mpn)}</code> <span class="text-muted">(${m.part_number})</span>
+            ${fpBadge}
+            ${m.lifecycle_status !== 'Active' ? statusBadge(m.lifecycle_status) : ''}
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+    swapBody.innerHTML = html;
+  } catch(e) {
+    swapBody.innerHTML = `<div class="alert alert-danger py-1 small mb-0">${e.message}</div>`;
+  }
+}
+
+async function confirmBomItemSwap(bomId, itemId, newPn, newFp, oldFp) {
+  if (newFp && oldFp && newFp !== oldFp) {
+    if (!confirm(`⚠️ 封装不同警告\n\n当前封装: ${oldFp}\n新型号封装: ${newFp}\n\n确认要更换物料为 ${newPn} 吗？`)) return;
+  }
+  try {
+    await api(`/api/boms/${bomId}/items/${itemId}`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({part_number: newPn})
+    });
+    toast(`物料已更换为 ${newPn}`);
+    showBomDetail(bomId);
+  } catch(e) { toast(e.message, 'danger'); }
+}
+async function cloneVersion(bomId) {
+  const notes = prompt('请输入版本修改说明（可选）：');
+  if (notes === null) return;  // cancelled
+  try {
+    const res = await api(`/api/boms/${bomId}/clone-version`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({change_notes:notes})});
+    const d = res.data;
+    toast(`新版本 ${d.version} 已创建 (BOM #${d.bom_id})`);
+    loadBoms();
+    showBomDetail(d.bom_id);
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ======================================================================
+// BOM
+// ======================================================================
+
+let _bomList = [];
+let _bomItemsMap = {};
+
+let _bomPage = 1;
+const _bomPageSize = 10;
+function _bomSearchReset() { _bomPage = 1; loadBoms(); }
+
+async function loadBoms(page) {
+  if (page) _bomPage = page;
+  const st = $('#bomStatusFilter').value;
+  const kw = $('#bomKeyword') ? $('#bomKeyword').value.trim() : '';
+  const params = new URLSearchParams({page:_bomPage, page_size:_bomPageSize});
+  if (st) params.set('status', st);
+  if (kw) params.set('keyword', kw);
+
+  const res = await api(`/api/boms/grouped?${params}`);
+  const d = res.data;
+  const boards = d.boards || [];
+
+  // Flatten all BOMs for compare dropdown
+  _bomList = boards.flatMap(b => b.boms);
+
+  if (!boards.length) {
+    $('#bomGrouped').innerHTML = '<div class="empty-state py-5"><i class="bi bi-clipboard-data"></i><p>暂无 BOM 数据</p></div>';
+    $('#bomPaging').innerHTML = '';
+  } else {
+    let html = '';
+    boards.forEach(board => {
+      const boms = board.boms;
+      html += `<div class="card mb-3">`;
+      // Board header
+      html += `<div class="card-header d-flex justify-content-between align-items-center" style="background:#f1f5f9">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-cpu-fill text-primary"></i>
+          <span class="fw-semibold">${board.board_name}</span>
+          <span class="badge bg-secondary">${boms.length} 个版本</span>
+        </div>
+      </div>`;
+      // Version rows
+      html += `<div class="card-body p-0"><div class="table-responsive"><table class="data-table mb-0">
+        <thead><tr><th style="width:60px">ID</th><th>版本</th><th>状态</th><th style="width:80px">物料数</th><th>发布日期</th><th>创建时间</th><th style="width:140px"></th></tr></thead><tbody>`;
+      boms.forEach(b => {
+        const isFirst = boms.indexOf(b) === 0;
+        html += `<tr>
+          <td class="text-muted">#${b.bom_id}</td>
+          <td><a href="#" onclick="showBomDetail(${b.bom_id})" class="text-decoration-none fw-semibold">${b.version}</a>
+            ${boms.length > 1 && isFirst ? '<span class="badge bg-light text-dark border ms-1">最新</span>' : ''}</td>
+          <td>${statusBadge(b.status)}</td>
+          <td><span class="badge bg-light text-dark">${b.item_count || 0}</span></td>
+          <td>${df(b.release_date) === '--' ? '--' : fmtDate(b.release_date)}</td>
+          <td>${fmtDate(b.created_at)}</td>
+          <td class="text-nowrap">
+            ${b.status==='Draft'?`<button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="showBomDetail(${b.bom_id})" title="编辑"><i class="bi bi-pencil"></i></button>`:''}
+            ${b.status==='Draft'?`<button class="btn btn-sm btn-outline-success py-0 px-1" onclick="releaseBom(${b.bom_id})" title="发布"><i class="bi bi-check-circle"></i></button>`:''}
+            ${b.status==='Released'?`<button class="btn btn-sm btn-outline-info py-0 px-1" onclick="cloneVersion(${b.bom_id})" title="迭代新版本"><i class="bi bi-plus-circle"></i></button>`:''}
+            ${b.status==='Released'?`<button class="btn btn-sm btn-outline-warning py-0 px-1" onclick="obsoleteBom(${b.bom_id})" title="废弃"><i class="bi bi-archive"></i></button>`:''}
+            <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="exportBom(${b.bom_id})" title="导出"><i class="bi bi-download"></i></button>
+          </td>
+        </tr>`;
+      });
+      html += `</tbody></table></div></div></div>`;
+    });
+    $('#bomGrouped').innerHTML = html;
+
+    // Pagination
+    const tp = d.total_pages;
+    const cur = d.page;
+    let paging = `<span class="text-muted small">共 ${d.total_boards} 个板卡，第 ${cur}/${tp} 页</span>`;
+    if (tp > 1) {
+      paging += '<div class="d-flex gap-1">';
+      paging += `<button class="btn btn-sm btn-outline-secondary" onclick="loadBoms(${cur-1})" ${cur<=1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+      // Show page numbers (up to 7)
+      const start = Math.max(1, cur - 3);
+      const end = Math.min(tp, cur + 3);
+      if (start > 1) paging += `<button class="btn btn-sm btn-outline-secondary" onclick="loadBoms(1)">1</button>`;
+      if (start > 2) paging += '<span class="align-self-center text-muted mx-1">...</span>';
+      for (let i = start; i <= end; i++) {
+        paging += `<button class="btn btn-sm ${i===cur?'btn-primary':'btn-outline-secondary'}" onclick="loadBoms(${i})">${i}</button>`;
+      }
+      if (end < tp - 1) paging += '<span class="align-self-center text-muted mx-1">...</span>';
+      if (end < tp) paging += `<button class="btn btn-sm btn-outline-secondary" onclick="loadBoms(${tp})">${tp}</button>`;
+      paging += `<button class="btn btn-sm btn-outline-secondary" onclick="loadBoms(${cur+1})" ${cur>=tp?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+      paging += '</div>';
+    }
+    $('#bomPaging').innerHTML = paging;
+  }
+
+  // Populate compare selects
+  ['cmp_a','cmp_b'].forEach(id => {
+    const sel = $(`#${id}`);
+    if (sel) sel.innerHTML = '<option value="">-- 选择 BOM --</option>' + _bomList.map(b => `<option value="${b.bom_id}">${b.board_name} ${b.version} (${b.status})</option>`).join('');
+  });
+}
+
+async function releaseBom(id) {
+  if (!confirm('确认发布此 BOM？发布后将无法直接编辑。')) return;
+  try { await api(`/api/boms/${id}/release`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); toast('BOM 已发布'); loadBoms(); showBomDetail(id); }
+  catch(e) { toast(e.message,'danger'); }
+}
+
+async function obsoleteBom(id) {
+  if (!confirm('确认废弃此 BOM？')) return;
+  try { await api(`/api/boms/${id}/obsolete`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); toast('BOM 已废弃'); loadBoms(); }
+  catch(e) { toast(e.message,'danger'); }
+}
+
+function exportBom(id) { window.location.href = `/api/boms/${id}/export?fmt=xlsx`; }
+
+// ---- 3-Step BOM Import Wizard ----
+const _ibState = { step: 1, file_path: '', headers: [], samples: [], auto_mapping: {}, total_rows: 0 };
+
+const _ibFields = [
+  { key: 'part_number', label: '物料编码', required: false },
+  { key: 'quantity',    label: '数量',     required: true },
+  { key: 'mpn',         label: '制造商型号 (MPN)', required: false },
+  { key: 'manufacturer',label: '制造商',   required: false },
+  { key: 'description', label: '描述',     required: false },
+  { key: 'footprint',   label: '封装',     required: false },
+  { key: 'ref_des',     label: '位号',     required: false },
+];
+
+function _ibReset() {
+  _ibState.step = 1; _ibState.file_path = ''; _ibState.headers = [];
+  _ibState.samples = []; _ibState.auto_mapping = {}; _ibState.total_rows = 0;
+  $('#ib_step1').style.display = ''; $('#ib_step2').style.display = 'none'; $('#ib_step3').style.display = 'none';
+  $('#ib_btnBack').style.display = 'none'; $('#ib_btnNext').style.display = '';
+  $('#ib_btnNext').textContent = '下一步'; $('#ib_stepBadge').textContent = '1 / 3';
+  $('#ib_uploadStatus').innerHTML = ''; $('#ib_validateResult').innerHTML = '';
+  $('#ib_file').value = ''; $('#ib_board').value = ''; $('#ib_ver').value = 'Rev1.0'; $('#ib_notes').value = '';
+}
+
+function _ibShowStep(n) {
+  _ibState.step = n;
+  $('#ib_step1').style.display = n === 1 ? '' : 'none';
+  $('#ib_step2').style.display = n === 2 ? '' : 'none';
+  $('#ib_step3').style.display = n === 3 ? '' : 'none';
+  $('#ib_stepBadge').textContent = `${n} / 3`;
+  $('#ib_btnBack').style.display = n > 1 ? '' : 'none';
+  if (n === 3) { $('#ib_btnNext').textContent = '确认导入'; }
+  else { $('#ib_btnNext').textContent = '下一步'; }
+}
+
+async function ibNext() {
+  const step = _ibState.step;
+  if (step === 1) {
+    // --- Step 1 -> 2: Upload file ---
+    const file = $('#ib_file').files[0];
+    if (!file) { toast('请选择文件', 'danger'); return; }
+    const board = $('#ib_board').value.trim();
+    if (!board) { toast('请输入板卡名称', 'danger'); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    $('#ib_uploadStatus').innerHTML = '<div class="text-muted small"><i class="bi bi-hourglass-split"></i> 正在上传并解析文件...</div>';
+    $('#ib_btnNext').disabled = true;
+    try {
+      const res = await api('/api/boms/upload', { method: 'POST', body: fd });
+      const d = res.data;
+      _ibState.file_path = d.file_path;
+      _ibState.headers = d.headers;
+      _ibState.samples = d.samples;
+      _ibState.auto_mapping = d.auto_mapping || {};
+      _ibState.total_rows = d.total_rows;
+      _ibBuildMappingUI();
+      _ibShowStep(2);
+    } catch (e) {
+      $('#ib_uploadStatus').innerHTML = `<div class="alert alert-danger py-2 small mb-0">${e.message}</div>`;
+    } finally { $('#ib_btnNext').disabled = false; }
+  } else if (step === 2) {
+    // --- Step 2 -> 3: Validate with user mapping ---
+    const mapping = _ibCollectMapping();
+    if (!mapping.quantity) { toast('请至少指定"数量"对应的列', 'warning'); return; }
+    if (!mapping.part_number && !mapping.mpn) { toast('请至少映射"物料编码"或"制造商型号"中的一列', 'warning'); return; }
+    $('#ib_btnNext').disabled = true;
+    $('#ib_validateResult').innerHTML = '<div class="text-muted small"><i class="bi bi-hourglass-split"></i> 正在校验数据...</div>';
+    _ibShowStep(3);
+    try {
+      const res = await api('/api/boms/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_path: _ibState.file_path, column_mapping: mapping }),
+      });
+      _ibShowValidateResult(res.data);
+    } catch (e) {
+      $('#ib_validateResult').innerHTML = `<div class="alert alert-danger py-2 small mb-0">${e.message}</div>`;
+    } finally { $('#ib_btnNext').disabled = false; }
+  } else if (step === 3) {
+    // --- Step 3: Confirm import ---
+    const mapping = _ibCollectMapping();
+    $('#ib_btnNext').disabled = true;
+    try {
+      const res = await api('/api/boms/confirm-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file_path: _ibState.file_path,
+          board_name: $('#ib_board').value.trim(),
+          version: $('#ib_ver').value || 'Rev1.0',
+          notes: $('#ib_notes').value,
+          column_mapping: mapping,
+        }),
+      });
+      const d = res.data;
+      let msg = `BOM 导入成功! #${d.bom_id} (${d.board_name} ${d.version}), ${d.items_imported} 项物料`;
+      if (d.auto_created_materials) msg += `，自动创建 ${d.auto_created_materials} 个新物料`;
+      toast(msg);
+      bootstrap.Modal.getInstance('#modalImportBom').hide();
+      _ibReset();
+      loadBoms();
+    } catch (e) { toast(e.message, 'danger'); }
+    finally { $('#ib_btnNext').disabled = false; }
+  }
+}
+
+function ibBack() {
+  if (_ibState.step > 1) {
+    _ibShowStep(_ibState.step - 1);
+    if (_ibState.step === 2) { $('#ib_btnNext').textContent = '下一步'; }
+  }
+}
+
+function _ibCollectMapping() {
+  const mapping = {};
+  _ibFields.forEach(f => {
+    const sel = document.getElementById(`ib_map_${f.key}`);
+    if (sel && sel.value) mapping[f.key] = sel.value;
+  });
+  return mapping;
+}
+
+function _ibBuildMappingUI() {
+  const headers = _ibState.headers;
+  const auto = _ibState.auto_mapping;
+  $('#ib_colCount').textContent = headers.length;
+  $('#ib_rowCount').textContent = _ibState.total_rows;
+
+  // Build mapping dropdowns
+  let html = '';
+  _ibFields.forEach(f => {
+    const selected = auto[f.key] || '';
+    const reqBadge = f.required ? '<span class="text-danger">*</span>' : '';
+    html += `<div class="col-md-6"><label class="form-label small mb-1">${f.label} ${reqBadge}</label>`;
+    html += `<select class="form-select form-select-sm" id="ib_map_${f.key}">`;
+    html += `<option value="">-- 不映射 --</option>`;
+    headers.forEach(h => {
+      const sel = (h === selected) ? ' selected' : '';
+      html += `<option value="${h}"${sel}>${h}</option>`;
+    });
+    html += `</select></div>`;
+  });
+  $('#ib_mappingArea').innerHTML = html;
+
+  // Build preview table
+  const thead = $('#ib_previewTable thead');
+  const tbody = $('#ib_previewTable tbody');
+  thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = _ibState.samples.map(row =>
+    '<tr>' + row.map(v => `<td>${v || ''}</td>`).join('') + '</tr>'
+  ).join('');
+
+  // Highlight mapped columns
+  _ibHighlightMapped();
+  _ibFields.forEach(f => {
+    const sel = document.getElementById(`ib_map_${f.key}`);
+    if (sel) sel.addEventListener('change', _ibHighlightMapped);
+  });
+}
+
+function _ibHighlightMapped() {
+  const mapping = _ibCollectMapping();
+  const mappedCols = new Set(Object.values(mapping));
+  const ths = $$('#ib_previewTable thead th');
+  ths.forEach(th => {
+    if (mappedCols.has(th.textContent)) {
+      th.style.background = '#dbeafe'; th.style.color = '#1e40af';
+    } else {
+      th.style.background = '#f8fafc'; th.style.color = '#64748b';
+    }
+  });
+}
+
+function _ibShowValidateResult(report) {
+  const validRows = report.valid_rows || [];
+  const validCount = validRows.length;
+  const errCount = (report.errors || []).length;
+  const warnCount = (report.warnings || []).length;
+  const autoCount = validRows.filter(r => r.auto_create).length;
+
+  let html = '<div class="mb-3">';
+  html += `<div class="d-flex gap-3 flex-wrap mb-2">`;
+  html += `<span class="badge bg-secondary fs-6">总行数: ${report.total_rows || 0}</span>`;
+  html += `<span class="badge bg-success fs-6">有效行: ${validCount}</span>`;
+  if (autoCount) html += `<span class="badge bg-info fs-6">将自动创建: ${autoCount}</span>`;
+  if (errCount) html += `<span class="badge bg-danger fs-6">错误: ${errCount}</span>`;
+  if (warnCount) html += `<span class="badge bg-warning text-dark fs-6">警告: ${warnCount}</span>`;
+  html += `</div>`;
+
+  if (errCount) {
+    html += '<div class="alert alert-danger py-2 small mb-2"><strong>错误信息：</strong><ul class="mb-0 ps-3">';
+    report.errors.slice(0, 10).forEach(e => {
+      const msg = typeof e === 'string' ? e : e.message;
+      html += `<li>${msg}</li>`;
+    });
+    if (errCount > 10) html += `<li class="text-muted">... 还有 ${errCount - 10} 条错误</li>`;
+    html += '</ul></div>';
+  }
+
+  if (warnCount) {
+    html += '<div class="alert alert-warning py-2 small mb-2"><strong>警告信息：</strong><ul class="mb-0 ps-3">';
+    report.warnings.slice(0, 8).forEach(w => html += `<li>${w}</li>`);
+    if (warnCount > 8) html += `<li class="text-muted">... 还有 ${warnCount - 8} 条警告</li>`;
+    html += '</ul></div>';
+  }
+
+  if (validCount > 0 && !report.errors.some(e => typeof e === 'object' && e.type === 'column')) {
+    let msg = '<i class="bi bi-check-circle"></i> 校验完成，点击"确认导入"将创建 BOM。';
+    if (autoCount) msg += ` 其中 <strong>${autoCount}</strong> 个物料将自动创建到物料库。`;
+    html += `<div class="alert alert-success py-2 small mb-0">${msg}</div>`;
+  } else if (validCount === 0) {
+    html += '<div class="alert alert-danger py-2 small mb-0">无有效数据行，请返回检查列映射或文件内容。</div>';
+  }
+
+  html += '</div>';
+  $('#ib_validateResult').innerHTML = html;
+}
+
+// Reset wizard when modal is closed
+$('#modalImportBom').addEventListener('hidden.bs.modal', _ibReset);
+
+async function compareBoms() {
+  const a = $('#cmp_a').value, b = $('#cmp_b').value;
+  if (!a || !b) { toast('请选择两个 BOM','warning'); return; }
+  if (a === b) { toast('请选择不同的 BOM','warning'); return; }
+  try {
+    const res = await api(`/api/boms/compare?a=${a}&b=${b}`);
+    const d = res.data;
+    let html = '';
+    if (d.added && d.added.length) {
+      html += `<h6 class="text-success mt-2"><i class="bi bi-plus-circle"></i> 新增 (${d.added.length})</h6><table class="data-table"><thead><tr><th>编码</th><th>MPN</th><th>数量</th></tr></thead><tbody>`;
+      d.added.forEach(i => html += `<tr class="table-success"><td>${i.part_number}</td><td>${df(i.mpn)}</td><td>${i.quantity}</td></tr>`);
+      html += '</tbody></table>';
+    }
+    if (d.removed && d.removed.length) {
+      html += `<h6 class="text-danger mt-2"><i class="bi bi-dash-circle"></i> 删除 (${d.removed.length})</h6><table class="data-table"><thead><tr><th>编码</th><th>MPN</th><th>数量</th></tr></thead><tbody>`;
+      d.removed.forEach(i => html += `<tr class="table-danger"><td>${i.part_number}</td><td>${df(i.mpn)}</td><td>${i.quantity}</td></tr>`);
+      html += '</tbody></table>';
+    }
+    if (d.changed && d.changed.length) {
+      html += `<h6 class="text-warning mt-2"><i class="bi bi-pencil"></i> 数量变更 (${d.changed.length})</h6><table class="data-table"><thead><tr><th>编码</th><th>MPN</th><th>A 数量</th><th>B 数量</th><th>变化</th></tr></thead><tbody>`;
+      d.changed.forEach(i => html += `<tr class="table-warning"><td>${i.part_number}</td><td>${df(i.mpn)}</td><td>${i.qty_a}</td><td>${i.qty_b}</td><td>${i.diff>0?'+':''}${i.diff}</td></tr>`);
+      html += '</tbody></table>';
+    }
+    if (!html) html = '<div class="text-muted text-center py-3">两个版本完全相同，无差异</div>';
+    $('#cmp_result').innerHTML = html;
+  } catch(e) { toast(e.message,'danger'); }
+}
+
+// ======================================================================
+// Calculations
+// ======================================================================
+
+async function loadCalcs() {
+  const res = await api('/api/calculations?limit=100');
+  const tasks = res.data || [];
+  $('#calcBody').innerHTML = tasks.length ? tasks.map(t => `
+    <tr>
+      <td><a href="#" onclick="showCalcDetail(${t.task_id})" class="text-decoration-none fw-semibold">#${t.task_id}</a></td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${fmtDate(t.created_at)}</td>
+      <td>${t.duration_ms?t.duration_ms+'ms':'-'}</td>
+      <td>-</td>
+      <td>-</td>
+      <td class="text-nowrap">
+        ${t.status==='Completed'?`<button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="exportCalc(${t.task_id})" title="导出报表"><i class="bi bi-download"></i></button>`:''}
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7" class="text-center text-muted py-4">暂无汇算任务</td></tr>`;
+}
+
+async function showCalcDetail(id) {
+  const res = await api(`/api/calculations/${id}`);
+  const t = res.data;
+  const items = t.items || [];
+  const merges = t.merges || {}; // {from_pn: to_pn}
+
+  // Build merge maps
+  const mergedFrom = {}; // target_pn -> [from_pns]
+  Object.entries(merges).forEach(([from, to]) => {
+    if (!mergedFrom[to]) mergedFrom[to] = [];
+    mergedFrom[to].push(from);
+  });
+
+  // Calculate merged totals
+  const itemMap = {};
+  items.forEach(it => { itemMap[it.part_number] = it; });
+  const mergedTotals = {}; // target_pn -> extra qty from merged items
+  Object.entries(merges).forEach(([from, to]) => {
+    if (itemMap[from] && itemMap[to]) {
+      mergedTotals[to] = (mergedTotals[to] || 0) + itemMap[from].final_qty;
+    }
+  });
+
+  const mergeCount = Object.keys(merges).length;
+  let html = `<div class="mb-3 d-flex gap-3 align-items-center flex-wrap">
+    ${statusBadge(t.status)}
+    <span class="small text-muted">创建: ${fmtDate(t.created_at)}</span>
+    ${t.duration_ms?`<span class="small text-muted">耗时: ${t.duration_ms}ms</span>`:''}
+    ${t.stats?`<span class="small text-muted">物料: ${t.stats.total_parts} 种</span>`:''}
+    ${mergeCount ? `<span class="badge bg-info">${mergeCount} 项已合并</span>` : ''}
+  </div>`;
+
+  if (t.boms && t.boms.length) {
+    html += '<div class="mb-3"><strong class="small">参与汇算的 BOM:</strong><div class="d-flex gap-2 flex-wrap mt-1">';
+    t.boms.forEach(b => html += `<span class="badge bg-light text-dark border">${b.board_name} ${b.version} &times; ${b.order_quantity}</span>`);
+    html += '</div></div>';
+  }
+
+  html += `<div class="mb-2 d-flex justify-content-between align-items-center">
+    <div class="small text-muted">汇算明细</div>
+    ${t.status==='Completed'?`<button class="btn btn-sm btn-outline-info" onclick="openMergeModal(${id})"><i class="bi bi-intersect"></i> 合并物料</button>`:''}
+  </div>`;
+
+  html += `<div class="table-responsive"><table class="data-table"><thead><tr><th>编码</th><th>MPN</th><th>描述</th><th>封装</th><th>理论量</th><th>损耗率</th><th>含损耗</th><th>最终量</th><th>状态</th><th>来源</th></tr></thead><tbody>`;
+  items.forEach(it => {
+    const sources = it.sources || [];
+    const srcSummary = sources.map(s => `${s.board_name} ${s.version}: ${s.subtotal}`).join(', ');
+    const isMerged = merges[it.part_number];
+    const isTarget = mergedFrom[it.part_number];
+    const extraQty = mergedTotals[it.part_number] || 0;
+    const displayQty = it.final_qty + extraQty;
+    const fp = df(it.footprint);
+
+    let mergeInfo = '';
+    if (isMerged) {
+      mergeInfo = `<span class="badge bg-warning text-dark ms-1" title="已合并到 ${isMerged}">已合并 → ${isMerged.substring(0,12)}</span>`;
+    }
+    if (isTarget) {
+      const mergedPns = isTarget.map(pn => pn).join(', ');
+      mergeInfo = `<span class="badge bg-info ms-1" title="合并来源: ${mergedPns}">合并 +${isTarget.length}</span>`;
+    }
+
+    const rowStyle = isMerged ? ' style="opacity:0.5"' : '';
+    html += `<tr${rowStyle}>
+      <td class="fw-semibold">${it.part_number}${mergeInfo}</td>
+      <td><code>${df(it.mpn, '--', 18)}</code></td>
+      <td>${df(it.description, '--', 20)}</td>
+      <td><span class="small">${fp}</span></td>
+      <td>${it.theoretical_qty}</td>
+      <td>${(it.loss_rate*100).toFixed(1)}%</td>
+      <td>${it.loss_included_qty}</td>
+      <td class="fw-bold">${isMerged ? `<s class="text-muted">${it.final_qty}</s>` : displayQty}${extraQty > 0 ? ` <span class="text-success small">(+${extraQty})</span>` : ''}</td>
+      <td>${statusBadge(it.lifecycle_status||'Active')}</td>
+      <td class="small text-muted" title="${srcSummary}">${srcSummary.length>40?srcSummary.substring(0,37)+'...':srcSummary}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  const totalDisplayQty = items.reduce((s, it) => {
+    if (merges[it.part_number]) return s; // skip merged items
+    return s + it.final_qty + (mergedTotals[it.part_number] || 0);
+  }, 0);
+  const displayParts = items.filter(it => !merges[it.part_number]).length;
+  html += `<div class="small text-muted mt-2">共 ${displayParts} 种物料${mergeCount ? ` (${mergeCount} 种已合并)` : ''} · 总采购量: ${totalDisplayQty}</div>`;
+
+  $('#calcDetailTitle').textContent = `汇算任务 #${id}`;
+  $('#calcDetailBody').innerHTML = html;
+  new bootstrap.Modal('#modalCalcDetail').show();
+}
+
+// ======================================================================
+// Calculation Merge UI
+// ======================================================================
+
+let _mergeTaskId = null;
+let _mergeGroups = [];
+let _mergeSelections = {}; // groupIndex -> selected target part_number
+
+async function openMergeModal(taskId) {
+  _mergeTaskId = taskId;
+  _mergeGroups = [];
+  _mergeSelections = {};
+
+  // Show loading in the calc detail modal footer area
+  const body = $('#calcDetailBody');
+  const mergeSection = document.createElement('div');
+  mergeSection.id = 'mergeSection';
+  mergeSection.innerHTML = '<div class="text-muted small py-3"><i class="bi bi-hourglass-split"></i> 正在查找可合并的物料分组...</div>';
+  body.appendChild(mergeSection);
+
+  try {
+    const res = await api(`/api/calculations/${taskId}/merge-groups`);
+    _mergeGroups = res.data || [];
+
+    if (!_mergeGroups.length) {
+      mergeSection.innerHTML = '<div class="alert alert-info small py-2 mt-2 mb-0"><i class="bi bi-info-circle"></i> 没有可合并的物料（所有物料的描述+封装均不相同）</div>';
+      return;
+    }
+
+    // Pre-select first item as target for each group
+    _mergeGroups.forEach((g, i) => {
+      _mergeSelections[i] = g.items[0].part_number;
+    });
+
+    renderMergeSection();
+  } catch(e) {
+    mergeSection.innerHTML = `<div class="alert alert-danger small py-2 mt-2 mb-0">${e.message}</div>`;
+  }
+}
+
+function renderMergeSection() {
+  const section = $('#mergeSection');
+  if (!section) return;
+
+  let html = `<div class="card mt-3 border-info">
+    <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+      <div><i class="bi bi-intersect text-info"></i> <strong>物料合并</strong> <span class="badge bg-info">${_mergeGroups.length} 个分组</span></div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary" onclick="saveMerges()"><i class="bi bi-check-lg"></i> 保存合并</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="cancelMerges()">取消</button>
+      </div>
+    </div>
+    <div class="card-body p-0" style="max-height:400px;overflow-y:auto">`;
+
+  _mergeGroups.forEach((group, gi) => {
+    const selectedPn = _mergeSelections[gi];
+    html += `<div class="border-bottom p-2">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div class="small">
+          <strong>${group.description}</strong>
+          ${group.footprint ? `<span class="badge bg-light text-dark border ms-1">${group.footprint}</span>` : ''}
+          <span class="text-muted ms-1">(${group.items.length} 个型号，合计 ${group.total_final_qty})</span>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <span class="small text-muted">合并到:</span>
+          <select class="form-select form-select-sm" style="width:auto;min-width:200px" onchange="updateMergeTarget(${gi}, this.value)" id="mergeTarget_${gi}">`;
+
+    group.items.forEach(m => {
+      const sel = m.part_number === selectedPn ? ' selected' : '';
+      html += `<option value="${m.part_number}"${sel}>${df(m.mpn)} (${m.part_number}) - ${m.final_qty}</option>`;
+    });
+    html += `<option value="__search__">🔍 从物料库选择...</option>`;
+    html += `</select></div></div>`;
+
+    // Items table
+    html += `<table class="data-table mb-0"><thead><tr><th>编码</th><th>MPN</th><th>制造商</th><th>最终量</th><th>状态</th><th>操作</th></tr></thead><tbody>`;
+    group.items.forEach(m => {
+      const isTarget = m.part_number === selectedPn;
+      const rowClass = isTarget ? 'table-info' : '';
+      html += `<tr class="${rowClass}">
+        <td class="fw-semibold">${m.part_number}${isTarget ? ' <span class="badge bg-info">目标</span>' : ''}</td>
+        <td><code>${df(m.mpn)}</code></td>
+        <td class="small">${df(m.manufacturer_name)}</td>
+        <td class="fw-bold">${m.final_qty}</td>
+        <td>${statusBadge(m.lifecycle_status || 'Active')}</td>
+        <td>${!isTarget ? `<button class="btn btn-sm btn-outline-info py-0 px-1" onclick="setMergeTarget(${gi},'${m.part_number}')">选为目标</button>` : ''}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+
+    // Search area for this group (hidden by default)
+    html += `<div id="mergeSearch_${gi}" class="mt-1" style="display:none">
+      <div class="d-flex gap-1">
+        <input class="form-control form-control-sm" id="mergeSearchInput_${gi}" placeholder="搜索物料库（型号/编码）..." oninput="debounceMergeSearch(${gi})">
+        <button class="btn btn-sm btn-outline-secondary" onclick="searchMergeLibrary(${gi})">搜索</button>
+      </div>
+      <div id="mergeSearchResults_${gi}" class="mt-1"></div>
+    </div>`;
+    html += `</div>`;
+  });
+
+  html += `</div></div>`;
+  section.innerHTML = html;
+}
+
+function updateMergeTarget(groupIndex, value) {
+  if (value === '__search__') {
+    const searchDiv = $(`#mergeSearch_${groupIndex}`);
+    if (searchDiv) searchDiv.style.display = searchDiv.style.display === 'none' ? '' : 'none';
+    // Reset select to previous value
+    const sel = $(`#mergeTarget_${groupIndex}`);
+    if (sel) sel.value = _mergeSelections[groupIndex];
+    return;
+  }
+  _mergeSelections[groupIndex] = value;
+  renderMergeSection();
+}
+
+function setMergeTarget(groupIndex, pn) {
+  _mergeSelections[groupIndex] = pn;
+  renderMergeSection();
+}
+
+let _mergeSearchTimers = {};
+function debounceMergeSearch(groupIndex) {
+  clearTimeout(_mergeSearchTimers[groupIndex]);
+  _mergeSearchTimers[groupIndex] = setTimeout(() => searchMergeLibrary(groupIndex), 300);
+}
+
+async function searchMergeLibrary(groupIndex) {
+  const input = $(`#mergeSearchInput_${groupIndex}`);
+  const resultsDiv = $(`#mergeSearchResults_${groupIndex}`);
+  if (!input || !resultsDiv) return;
+
+  const group = _mergeGroups[groupIndex];
+  if (!group) return;
+
+  const keyword = input.value.trim();
+  const desc = group.description;
+  const fp = group.footprint || '';
+
+  resultsDiv.innerHTML = '<div class="text-muted small">搜索中...</div>';
+
+  try {
+    // Search by description (and optionally footprint)
+    let url = `/api/materials/by-desc-fp?desc=${encodeURIComponent(desc)}`;
+    if (fp) url += `&fp=${encodeURIComponent(fp)}`;
+    const res = await api(url);
+    let materials = res.data || [];
+
+    // If keyword provided, filter by keyword in mpn or part_number
+    if (keyword) {
+      const kw = keyword.toLowerCase();
+      materials = materials.filter(m =>
+        (m.mpn || '').toLowerCase().includes(kw) ||
+        (m.part_number || '').toLowerCase().includes(kw)
+      );
+    }
+
+    if (!materials.length) {
+      // Try broader search: just by footprint
+      if (fp) {
+        const fpRes = await api(`/api/materials/by-desc-fp?desc=${encodeURIComponent(desc)}`);
+        materials = fpRes.data || [];
+        if (keyword) {
+          const kw = keyword.toLowerCase();
+          materials = materials.filter(m =>
+            (m.mpn || '').toLowerCase().includes(kw) ||
+            (m.part_number || '').toLowerCase().includes(kw)
+          );
+        }
+      }
+    }
+
+    if (!materials.length) {
+      resultsDiv.innerHTML = '<div class="text-muted small">未找到匹配的物料</div>';
+      return;
+    }
+
+    let html = '<div class="small">';
+    materials.forEach(m => {
+      const fpMatch = !fp || m.footprint === fp;
+      html += `<div class="d-flex align-items-center gap-2 p-1 border-bottom">
+        <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="selectMergeTarget(${groupIndex},'${m.part_number}')">选用</button>
+        <code>${df(m.mpn)}</code> <span class="text-muted">(${m.part_number})</span>
+        <span class="small">${df(m.footprint, '')}</span>
+        ${!fpMatch ? '<span class="badge bg-warning text-dark">封装不同</span>' : ''}
+      </div>`;
+    });
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+  } catch(e) {
+    resultsDiv.innerHTML = `<div class="text-danger small">${e.message}</div>`;
+  }
+}
+
+function selectMergeTarget(groupIndex, pn) {
+  _mergeSelections[groupIndex] = pn;
+  renderMergeSection();
+}
+
+async function saveMerges() {
+  const merges = [];
+  _mergeGroups.forEach((group, gi) => {
+    const target = _mergeSelections[gi];
+    if (target) {
+      group.items.forEach(m => {
+        if (m.part_number !== target) {
+          merges.push({from_pn: m.part_number, to_pn: target});
+        }
+      });
+    }
+  });
+
+  if (!merges.length) {
+    toast('未设置任何合并规则', 'warning');
+    return;
+  }
+
+  try {
+    const res = await api(`/api/calculations/${_mergeTaskId}/merges`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({merges})
+    });
+    toast(res.message);
+    showCalcDetail(_mergeTaskId);
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+function cancelMerges() {
+  const section = $('#mergeSection');
+  if (section) section.remove();
+}
+
+function exportCalc(id) { window.location.href = `/api/calculations/${id}/export?fmt=xlsx`; }
+
+// Create calc modal
+async function openCreateCalc() {
+  const res = await api('/api/boms?status=Released');
+  const boms = res.data || [];
+  if (!boms.length) { toast('没有已发布的 BOM，请先发布 BOM','warning'); return; }
+  window._calcBoms = boms;
+  $('#calcBomList').innerHTML = '';
+  addCalcRow();
+}
+
+function addCalcRow() {
+  const boms = window._calcBoms || [];
+  const div = document.createElement('div');
+  div.className = 'd-flex gap-2 mb-2 align-items-center';
+  div.innerHTML = `
+    <select class="form-select form-select-sm calc-bom-sel" style="flex:1">
+      <option value="">-- 选择 BOM --</option>
+      ${boms.map(b => `<option value="${b.bom_id}">${b.board_name} ${b.version}</option>`).join('')}
+    </select>
+    <input type="number" class="form-control form-control-sm calc-qty" style="width:100px" placeholder="生产数量" min="1">
+    <button class="btn btn-sm btn-outline-danger py-0" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>`;
+  $('#calcBomList').appendChild(div);
+}
+
+async function createCalc() {
+  const rows = $$('#calcBomList > div');
+  const boms = [];
+  rows.forEach(r => {
+    const id = r.querySelector('.calc-bom-sel').value;
+    const qty = parseInt(r.querySelector('.calc-qty').value);
+    if (id && qty > 0) boms.push({bom_id: parseInt(id), order_quantity: qty});
+  });
+  if (!boms.length) { toast('请至少选择一个 BOM 并输入生产数量','warning'); return; }
+  try {
+    const res = await api('/api/calculations', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({boms})});
+    toast(`汇算完成! 任务 #${res.data.task_id}`);
+    bootstrap.Modal.getInstance('#modalCreateCalc').hide();
+    loadCalcs();
+  } catch(e) { toast(e.message,'danger'); }
+}
+
+// ======================================================================
+// Categories Management (2-level tree)
+// ======================================================================
+
+let _catTree = [];
+
+async function loadCategoriesTree() {
+  const res = await api('/api/categories/tree');
+  _catTree = res.data || [];
+  renderCatTree();
+}
+
+function renderCatTree() {
+  if (!_catTree.length) {
+    $('#catTree').innerHTML = '<div class="empty-state py-4"><i class="bi bi-tags"></i><p>暂无分类</p></div>';
+    return;
+  }
+  let html = '<table class="data-table"><thead><tr><th style="width:30px"></th><th>分类名称</th><th style="width:100px">前缀</th><th style="width:90px">损耗率</th><th style="width:180px">操作</th></tr></thead><tbody>';
+  _catTree.forEach(p => {
+    html += `<tr class="fw-semibold" style="background:#f8fafc">
+      <td><i class="bi bi-folder-fill text-primary"></i></td>
+      <td>${p.name}</td>
+      <td><code>${p.code_prefix}</code></td>
+      <td><input class="form-control form-control-sm" style="width:70px" type="number" step="0.01" min="0" max="1" value="${p.default_loss_rate}" onchange="updateCatLoss(${p.id}, this.value)" title="损耗率 (0-1)"></td>
+      <td class="text-nowrap">
+        <button class="btn btn-sm btn-outline-success py-0 px-1" onclick="showAddChildCat(${p.id},'${p.name}')" title="添加子分类"><i class="bi bi-plus-lg"></i> 子分类</button>
+        <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="editCatInline(${p.id})" title="编辑"><i class="bi bi-pencil"></i></button>
+        <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteCat(${p.id},'${p.name}')" title="删除"><i class="bi bi-trash"></i></button>
+      </td>
+    </tr>`;
+    (p.children || []).forEach(c => {
+      html += `<tr>
+        <td></td>
+        <td style="padding-left:32px"><i class="bi bi-dash text-muted me-1"></i>${c.name}</td>
+        <td><code>${c.code_prefix}</code></td>
+        <td><input class="form-control form-control-sm" style="width:70px" type="number" step="0.01" min="0" max="1" value="${c.default_loss_rate}" onchange="updateCatLoss(${c.id}, this.value)" title="损耗率 (0-1)"></td>
+        <td class="text-nowrap">
+          <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="editCatInline(${c.id})" title="编辑"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteCat(${c.id},'${c.name}')" title="删除"><i class="bi bi-trash"></i></button>
+        </td>
+      </tr>`;
+    });
+  });
+  html += '</tbody></table>';
+  $('#catTree').innerHTML = html;
+}
+
+function showAddParentCat() {
+  $('#addParentCatForm').style.display = '';
+  $('#addChildCatForm').style.display = 'none';
+  $('#apc_name').value = ''; $('#apc_prefix').value = ''; $('#apc_loss').value = '0.03';
+  $('#apc_name').focus();
+}
+
+function showAddChildCat(parentId, parentName) {
+  $('#addChildCatForm').style.display = '';
+  $('#addParentCatForm').style.display = 'none';
+  $('#acc_parent_id').value = parentId;
+  $('#acc_parent_name').textContent = parentName;
+  $('#acc_name').value = ''; $('#acc_prefix').value = ''; $('#acc_loss').value = '0.03';
+  $('#acc_name').focus();
+}
+
+async function addParentCategory() {
+  const name = $('#apc_name').value.trim();
+  const prefix = $('#apc_prefix').value.trim().toUpperCase();
+  const loss = parseFloat($('#apc_loss').value) || 0.03;
+  if (!name || !prefix) { toast('请填写名称和前缀', 'warning'); return; }
+  try {
+    await api('/api/categories', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, code_prefix:prefix, default_loss_rate:loss})});
+    toast(`父分类 ${name} 已创建`);
+    $('#addParentCatForm').style.display = 'none';
+    _categories = [];
+    loadCategoriesTree();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function addChildCategory() {
+  const parentId = parseInt($('#acc_parent_id').value);
+  const name = $('#acc_name').value.trim();
+  const prefix = $('#acc_prefix').value.trim().toUpperCase();
+  const loss = parseFloat($('#acc_loss').value) || 0.03;
+  if (!name || !prefix) { toast('请填写名称和前缀', 'warning'); return; }
+  try {
+    await api('/api/categories', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, code_prefix:prefix, parent_id:parentId, default_loss_rate:loss})});
+    toast(`子分类 ${name} 已创建`);
+    $('#addChildCatForm').style.display = 'none';
+    _categories = [];
+    loadCategoriesTree();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+function editCatInline(catId) {
+  const cat = _catTree.flatMap(p => [p, ...(p.children||[])]).find(c => c.id === catId);
+  if (!cat) return;
+  // Hide add forms, show edit form
+  $('#addParentCatForm').style.display = 'none';
+  $('#addChildCatForm').style.display = 'none';
+  $('#editCatForm').style.display = '';
+  $('#ec_id').value = cat.id;
+  $('#ec_name_display').textContent = cat.name;
+  $('#ec_name').value = cat.name;
+  $('#ec_prefix').value = cat.code_prefix;
+  $('#ec_loss').value = cat.default_loss_rate;
+  $('#ec_name').focus();
+}
+
+async function saveCatEdit() {
+  const catId = parseInt($('#ec_id').value);
+  const name = $('#ec_name').value.trim();
+  const prefix = $('#ec_prefix').value.trim().toUpperCase();
+  const loss = parseFloat($('#ec_loss').value);
+  if (!name || !prefix) { toast('请填写名称和前缀', 'warning'); return; }
+  if (isNaN(loss) || loss < 0 || loss > 1) { toast('损耗率需为 0-1 之间的数值', 'warning'); return; }
+  try {
+    await api(`/api/categories/${catId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, code_prefix:prefix, default_loss_rate:loss})});
+    toast('分类已更新');
+    $('#editCatForm').style.display = 'none';
+    _categories = [];
+    loadCategoriesTree();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function updateCatLoss(catId, value) {
+  const loss = parseFloat(value);
+  if (isNaN(loss) || loss < 0 || loss > 1) { toast('损耗率需为 0-1 之间的数值', 'warning'); loadCategoriesTree(); return; }
+  try {
+    await api(`/api/categories/${catId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({default_loss_rate:loss})});
+    toast('损耗率已更新');
+  } catch(e) { toast(e.message, 'danger'); loadCategoriesTree(); }
+}
+
+async function deleteCat(catId, name) {
+  if (!confirm(`确认删除分类 "${name}"？\n注意：被物料引用或有子分类的分类无法删除。`)) return;
+  try {
+    await api(`/api/categories/${catId}`, {method:'DELETE'});
+    toast('分类已删除');
+    _categories = [];
+    loadCategoriesTree();
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ======================================================================
+// Footprints Management
+// ======================================================================
+
+let _footprints = [];
+
+async function loadFootprints() {
+  const res = await api('/api/footprints');
+  _footprints = res.data || [];
+  renderFootprints();
+}
+
+function renderFootprints() {
+  const total = _footprints.length;
+  const inUse = _footprints.filter(fp => fp.material_count > 0).length;
+  const unregistered = _footprints.filter(fp => !fp.registered);
+
+  // Stats
+  $('#fpStats').textContent = `共 ${total} 种封装，${inUse} 种被物料引用`;
+
+  // Batch register button
+  const batchBtn = $('#fpBatchRegBtn');
+  if (unregistered.length > 0) {
+    batchBtn.style.display = '';
+    batchBtn.innerHTML = `<i class="bi bi-check2-all"></i> 注册 ${unregistered.length} 个未注册封装`;
+  } else {
+    batchBtn.style.display = 'none';
+  }
+
+  if (!total) {
+    $('#fpBody').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">暂无封装数据，请先在物料库中创建物料或手动新建封装</td></tr>';
+    return;
+  }
+
+  $('#fpBody').innerHTML = _footprints.map(fp => {
+    const isUnreg = !fp.registered;
+    const usageCount = fp.material_count || 0;
+    const usageBadge = usageCount > 0
+      ? `<span class="badge bg-primary">${usageCount} 个物料</span>`
+      : `<span class="badge bg-light text-muted">未引用</span>`;
+    const statusBadge = isUnreg
+      ? `<span class="badge bg-warning text-dark">未注册</span>`
+      : `<span class="badge bg-success">已注册</span>`;
+
+    let actions = '';
+    if (isUnreg) {
+      actions += `<button class="btn btn-sm btn-outline-success py-0 px-1" onclick="registerFootprint('${fp.name}')" title="注册到封装库"><i class="bi bi-plus-circle"></i> 注册</button>`;
+    } else {
+      actions += `<button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="editFootprint(${fp.id})" title="编辑"><i class="bi bi-pencil"></i></button>`;
+      actions += `<button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteFootprint(${fp.id},'${fp.name}')" title="删除" ${usageCount > 0 ? 'disabled' : ''}><i class="bi bi-trash"></i></button>`;
+    }
+
+    return `<tr${isUnreg ? ' style="background:#fffbeb"' : ''}>
+      <td class="fw-semibold">${fp.name}</td>
+      <td>${df(fp.description)}</td>
+      <td>${usageBadge}</td>
+      <td>${statusBadge}</td>
+      <td class="text-nowrap">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showAddFootprint() {
+  $('#fpFormTitle').textContent = '新建封装';
+  $('#fp_edit_id').value = '';
+  $('#fp_name').value = '';
+  $('#fp_desc').value = '';
+  $('#fpForm').style.display = '';
+  $('#fp_name').focus();
+}
+
+function editFootprint(id) {
+  const fp = _footprints.find(f => f.id === id);
+  if (!fp) return;
+  $('#fpFormTitle').textContent = `编辑封装: ${fp.name}`;
+  $('#fp_edit_id').value = id;
+  $('#fp_name').value = fp.name;
+  $('#fp_desc').value = fp.description || '';
+  $('#fpForm').style.display = '';
+  $('#fp_name').focus();
+}
+
+async function saveFootprint() {
+  const id = $('#fp_edit_id').value;
+  const name = $('#fp_name').value.trim();
+  const desc = $('#fp_desc').value.trim();
+  if (!name) { toast('请填写封装名称', 'warning'); return; }
+  try {
+    if (id) {
+      await api(`/api/footprints/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, description:desc})});
+      toast('封装已更新');
+    } else {
+      await api('/api/footprints', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, description:desc})});
+      toast('封装已创建');
+    }
+    $('#fpForm').style.display = 'none';
+    loadFootprints();
+    _footprintOptions = []; // reset cache for material forms
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function registerFootprint(name) {
+  try {
+    await api('/api/footprints', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, description:''})});
+    toast(`封装 ${name} 已注册`);
+    loadFootprints();
+    _footprintOptions = [];
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function batchRegisterFootprints() {
+  const unregCount = _footprints.filter(fp => !fp.registered).length;
+  if (!confirm(`确认将 ${unregCount} 个物料库中使用的封装注册到封装库？`)) return;
+  try {
+    const res = await api('/api/footprints/batch-register', {method:'POST'});
+    toast(res.message);
+    loadFootprints();
+    _footprintOptions = [];
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+async function deleteFootprint(id, name) {
+  if (!confirm(`确认删除封装 "${name}"？`)) return;
+  try {
+    await api(`/api/footprints/${id}`, {method:'DELETE'});
+    toast('封装已删除');
+    loadFootprints();
+    _footprintOptions = [];
+  } catch(e) { toast(e.message, 'danger'); }
+}
+
+// ======================================================================
+// Audit
+// ======================================================================
+
+async function loadAudit() {
+  const res = await api('/api/audit-logs?limit=200');
+  const logs = res.data || [];
+  $('#auditBody').innerHTML = logs.length ? logs.map(l => `
+    <tr>
+      <td class="text-nowrap small">${fmtDate(l.timestamp)}</td>
+      <td>${df(l.user_name)}</td>
+      <td><code class="small">${l.action}</code></td>
+      <td>${df(l.target_type)} ${l.target_id?'#'+l.target_id:''}</td>
+      <td class="small text-muted" style="max-width:300px;overflow:hidden;text-overflow:ellipsis">${l.detail?df(JSON.stringify(JSON.parse(l.detail)),'--',80):df(null)}</td>
+    </tr>`).join('') : `<tr><td colspan="5" class="text-center text-muted py-4">暂无日志</td></tr>`;
+}
+
+// ======================================================================
+// System
+// ======================================================================
+
+async function doBackup() {
+  try { await api('/api/backup',{method:'POST'}); toast('数据库备份成功'); }
+  catch(e) { toast(e.message,'danger'); }
+}
+
+// ======================================================================
+// Clock
+// ======================================================================
+
+function updateClock() {
+  const d = new Date();
+  $('#clock').textContent = d.toLocaleString('zh-CN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ======================================================================
+// Modal hooks
+// ======================================================================
+
+$('#modalCreateCalc').addEventListener('show.bs.modal', openCreateCalc);
+
+// ======================================================================
+// Init
+// ======================================================================
+
+loadDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# 物料汇算系统 - Python 依赖
+# 安装: pip install -r requirements.txt
+
+# 核心依赖（必需）
+openpyxl>=3.0.0
+
+# Web 界面
+flask>=2.0.0
+
+# 文件导入（可选，仅 CSV/Excel 批量导入时需要）
+pandas>=1.3.0
