@@ -161,6 +161,52 @@ python cli.py system backup
 cp material_db.db bom_db.db backups/
 ```
 
+## systemd 后台服务 (Linux)
+
+将 Web 服务注册为 systemd 服务，开机自启、崩溃自动重启。
+
+### 安装
+
+```bash
+# 1. 先完成环境部署
+bash setup.sh
+
+# 2. 安装为服务（默认端口 5000，当前用户运行）
+bash deploy/install_service.sh
+
+# 3. 自定义配置
+bash deploy/install_service.sh --port 8080           # 修改端口
+bash deploy/install_service.sh --user bom            # 指定运行用户
+bash deploy/install_service.sh --host 127.0.0.1      # 仅本机访问
+```
+
+### 服务管理
+
+```bash
+systemctl status bom_system      # 查看状态
+systemctl restart bom_system     # 重启
+systemctl stop bom_system        # 停止
+systemctl disable bom_system     # 取消开机自启
+journalctl -u bom_system -f      # 实时查看日志
+journalctl -u bom_system -n 100  # 最近 100 条日志
+```
+
+### 卸载
+
+```bash
+bash deploy/install_service.sh --uninstall
+```
+
+### 服务文件说明
+
+安装脚本会自动生成 `/etc/systemd/system/bom_system.service`，包含：
+
+- **自动重启**：进程崩溃后 5 秒自动拉起 (`Restart=always`)
+- **开机自启**：`WantedBy=multi-user.target`
+- **日志**：输出到 journald，用 `journalctl -u bom_system` 查看
+- **安全加固**：`NoNewPrivileges=true`、`PrivateTmp=true`
+- **环境变量**：支持 `BOM_HOST` / `BOM_PORT` 覆盖
+
 ## 部署到服务器 (Linux)
 
 ```bash

@@ -1,0 +1,32 @@
+﻿[Unit]
+Description=物料汇算系统 Web 服务 (BOM System)
+Documentation=https://github.com/askyuan/bom_system
+After=network.target
+
+[Service]
+Type=simple
+# 项目安装目录（安装脚本会自动替换为实际路径）
+WorkingDirectory=__PROJECT_DIR__
+# 使用 venv 中的 Python（安装脚本自动替换）
+ExecStart=__VENV_PYTHON__ __PROJECT_DIR__/web.py --host __HOST__ --port __PORT__
+Restart=always
+RestartSec=5
+# 运行用户（安装脚本自动替换，默认当前用户）
+User=__RUN_USER__
+Group=__RUN_GROUP__
+
+# 环境配置
+Environment=PYTHONUNBUFFERED=1
+Environment=BOM_HOST=__HOST__
+Environment=BOM_PORT=__PORT__
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+
+# 日志输出到 journald
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
